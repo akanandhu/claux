@@ -1,11 +1,17 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import {
-  BarChart3,
   Bell,
   Bot,
   Clock3,
   Download,
   FileText,
   GitBranch,
+  Maximize2,
+  Minus,
+  MousePointer2,
+  Plus,
   RefreshCw,
   Search,
   Settings,
@@ -13,7 +19,12 @@ import {
 } from "lucide-react";
 
 import { demoAnalysis } from "@/features/demo/fixture";
-import type { DemoFinding, DemoMetric } from "@/features/demo/types";
+import type {
+  DemoFinding,
+  DemoGraphEdge,
+  DemoGraphNode,
+  DemoMetric,
+} from "@/features/demo/types";
 
 const metricTone: Record<DemoMetric["tone"], string> = {
   neutral: "border-border bg-surface-raised text-foreground",
@@ -31,12 +42,37 @@ const severityTone: Record<DemoFinding["severity"], string> = {
   CRITICAL: "border-danger bg-danger/20 text-danger",
 };
 
+const graphNodeTone: Partial<
+  Record<DemoGraphNode["type"], { fill: string; stroke: string; text: string }>
+> = {
+  CLAUSE: { fill: "#2563eb", stroke: "#93c5fd", text: "#dbeafe" },
+  OBLIGATION: { fill: "#7c3aed", stroke: "#c4b5fd", text: "#ede9fe" },
+  RIGHT: { fill: "#22c55e", stroke: "#86efac", text: "#dcfce7" },
+  CONDITION: { fill: "#f59e0b", stroke: "#fcd34d", text: "#fef3c7" },
+  PARTY: { fill: "#14b8a6", stroke: "#5eead4", text: "#ccfbf1" },
+  FINDING: { fill: "#ef4444", stroke: "#fca5a5", text: "#fee2e2" },
+  CONTRACT: { fill: "#1f2937", stroke: "#94a3b8", text: "#f8fafc" },
+};
+
+const graphLegend = [
+  { label: "Clause", color: "#2563eb" },
+  { label: "Obligation", color: "#7c3aed" },
+  { label: "Right", color: "#22c55e" },
+  { label: "Condition", color: "#f59e0b" },
+  { label: "Party", color: "#14b8a6" },
+  { label: "Risk", color: "#ef4444" },
+];
+
 export default function Home() {
   const analysis = demoAnalysis;
+  const [selectedInspectorId, setSelectedInspectorId] = useState(
+    analysis.defaultInspectorId,
+  );
   const selectedInspector =
     analysis.inspectors.find(
-      (inspector) => inspector.id === analysis.defaultInspectorId,
+      (inspector) => inspector.id === selectedInspectorId,
     ) ?? analysis.inspectors[0];
+  const selectedNodeId = selectedInspector.nodeId;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -204,32 +240,13 @@ export default function Home() {
                 icon={GitBranch}
                 eyebrow="Graph"
                 title="Contract structure"
-                action="10 nodes"
+                action={`${analysis.graph.nodes.length} nodes`}
               />
-              <div className="grid min-h-[360px] place-items-center border-t border-border p-6">
-                <div className="w-full max-w-2xl">
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <GraphStat label="Parties" value="2" />
-                    <GraphStat label="Clause clusters" value="4" />
-                    <GraphStat label="Risk paths" value="2" />
-                  </div>
-                  <div className="mt-5 rounded-md border border-dashed border-border bg-background/45 p-5">
-                    <div className="flex items-center gap-3">
-                      <BarChart3
-                        aria-hidden="true"
-                        className="size-5 text-primary"
-                      />
-                      <p className="text-sm font-medium">
-                        Deterministic graph viewport
-                      </p>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                      Fees, termination, service credits, and liability cap paths
-                      are ready for the static SVG graph layer.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <StaticContractGraph
+                graph={analysis.graph}
+                onSelectInspector={setSelectedInspectorId}
+                selectedNodeId={selectedNodeId}
+              />
             </section>
 
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -347,6 +364,233 @@ function ToolbarButton({
   );
 }
 
+function StaticContractGraph({
+  graph,
+  onSelectInspector,
+  selectedNodeId,
+}: {
+  graph: {
+    nodes: DemoGraphNode[];
+    edges: DemoGraphEdge[];
+  };
+  onSelectInspector: (inspectorId: string) => void;
+  selectedNodeId: string;
+}) {
+  const graphIndex = useMemo(() => {
+    const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+    const selectedEdgeIds = new Set<string>();
+    const selectedNodeIds = new Set([selectedNodeId]);
+
+    graph.edges.forEach((edge) => {
+      if (edge.source === selectedNodeId || edge.target === selectedNodeId) {
+        selectedEdgeIds.add(edge.id);
+        selectedNodeIds.add(edge.source);
+        selectedNodeIds.add(edge.target);
+      }
+    });
+
+    return { nodesById, selectedEdgeIds, selectedNodeIds };
+  }, [graph.edges, graph.nodes, selectedNodeId]);
+
+  return (
+    <div className="border-t border-border">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          {graphLegend.map((item) => (
+            <span
+              className="inline-flex items-center gap-2 text-xs text-muted-foreground"
+              key={item.label}
+            >
+              <span
+                aria-hidden="true"
+                className="size-2.5 rounded-full"
+                style={{ backgroundColor: item.color }}
+              />
+              {item.label}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <GraphControlButton icon={Minus} label="Zoom out" />
+          <GraphControlButton icon={Plus} label="Zoom in" />
+          <GraphControlButton icon={Maximize2} label="Fit graph" />
+          <GraphControlButton icon={MousePointer2} label="Select mode" />
+        </div>
+      </div>
+
+      <div className="overflow-hidden p-3 sm:p-4">
+        <svg
+          aria-label="Static contract structure graph"
+          className="min-h-[360px] w-full rounded-md border border-border bg-background"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          viewBox="0 0 790 310"
+        >
+          <defs>
+            <marker
+              id="arrow-dependency"
+              markerHeight="8"
+              markerWidth="8"
+              orient="auto"
+              refX="7"
+              refY="4"
+              viewBox="0 0 8 8"
+            >
+              <path d="M 0 0 L 8 4 L 0 8 z" fill="#60a5fa" />
+            </marker>
+            <marker
+              id="arrow-risk"
+              markerHeight="8"
+              markerWidth="8"
+              orient="auto"
+              refX="7"
+              refY="4"
+              viewBox="0 0 8 8"
+            >
+              <path d="M 0 0 L 8 4 L 0 8 z" fill="#f87171" />
+            </marker>
+            <marker
+              id="arrow-reference"
+              markerHeight="8"
+              markerWidth="8"
+              orient="auto"
+              refX="7"
+              refY="4"
+              viewBox="0 0 8 8"
+            >
+              <path d="M 0 0 L 8 4 L 0 8 z" fill="#94a3b8" />
+            </marker>
+          </defs>
+
+          <g>
+            {graph.edges.map((edge) => {
+              const source = graphIndex.nodesById.get(edge.source);
+              const target = graphIndex.nodesById.get(edge.target);
+
+              if (!source || !target) {
+                return null;
+              }
+
+              const isSelected = graphIndex.selectedEdgeIds.has(edge.id);
+              const color = edgeColor(edge.pathType);
+
+              return (
+                <line
+                  key={edge.id}
+                  markerEnd={`url(#arrow-${edge.pathType})`}
+                  stroke={color}
+                  strokeDasharray={edge.dashed ? "7 7" : undefined}
+                  strokeLinecap="round"
+                  strokeOpacity={isSelected ? 0.95 : 0.28}
+                  strokeWidth={isSelected ? 3 : 1.7}
+                  x1={source.x}
+                  x2={target.x}
+                  y1={source.y}
+                  y2={target.y}
+                />
+              );
+            })}
+          </g>
+
+          <g>
+            {graph.nodes.map((node) => {
+              const tone = graphNodeTone[node.type] ?? graphNodeTone.CLAUSE!;
+              const isSelected = node.id === selectedNodeId;
+              const isConnected = graphIndex.selectedNodeIds.has(node.id);
+              const isDimmed = !isSelected && !isConnected;
+              const canInspect = Boolean(node.inspectorId);
+
+              return (
+                <g
+                  aria-label={`${node.label} ${node.type.toLowerCase()}`}
+                  className={canInspect ? "cursor-pointer outline-none" : ""}
+                  key={node.id}
+                  onClick={() => {
+                    if (node.inspectorId) {
+                      onSelectInspector(node.inspectorId);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      node.inspectorId &&
+                      (event.key === "Enter" || event.key === " ")
+                    ) {
+                      event.preventDefault();
+                      onSelectInspector(node.inspectorId);
+                    }
+                  }}
+                  role={canInspect ? "button" : "img"}
+                  tabIndex={canInspect ? 0 : undefined}
+                >
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    fill={tone.fill}
+                    opacity={isDimmed ? 0.46 : 0.95}
+                    r={isSelected ? node.size / 2 + 5 : node.size / 2}
+                    stroke={isSelected ? "#f8fafc" : tone.stroke}
+                    strokeWidth={isSelected ? 3 : 1.5}
+                  />
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    fill="none"
+                    opacity={isSelected ? 0.55 : 0}
+                    r={node.size / 2 + 10}
+                    stroke={tone.stroke}
+                    strokeWidth="1.5"
+                  />
+                  <text
+                    fill={tone.text}
+                    fontSize={node.label.length > 11 ? "9" : "11"}
+                    fontWeight="700"
+                    pointerEvents="none"
+                    textAnchor="middle"
+                    x={node.x}
+                    y={node.y + 4}
+                  >
+                    {node.label}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function GraphControlButton({
+  icon: Icon,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  label: string;
+}) {
+  return (
+    <button
+      aria-label={label}
+      className="inline-flex size-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition hover:border-primary/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      type="button"
+    >
+      <Icon aria-hidden={true} className="size-4" />
+    </button>
+  );
+}
+
+function edgeColor(pathType: DemoGraphEdge["pathType"]) {
+  if (pathType === "risk") {
+    return "#f87171";
+  }
+
+  if (pathType === "reference") {
+    return "#94a3b8";
+  }
+
+  return "#60a5fa";
+}
+
 function PanelHeader({
   action,
   eyebrow,
@@ -374,15 +618,6 @@ function PanelHeader({
       <span className="shrink-0 rounded-sm border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
         {action}
       </span>
-    </div>
-  );
-}
-
-function GraphStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border bg-surface-raised p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
     </div>
   );
 }

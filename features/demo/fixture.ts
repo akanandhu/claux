@@ -365,6 +365,237 @@ export const demoAnalysis: DemoAnalysisFixture = {
         { label: "Validation", detail: "Cross-reference needs review" },
       ],
     },
+    {
+      id: "customer-party",
+      nodeId: "customer",
+      clauseRef: "Preamble",
+      title: "Customer party reference",
+      nodeType: "PARTY",
+      confidence: 0.94,
+      labels: ["FACT"],
+      summary:
+        "The customer is identified as the reviewing party for this static sample.",
+      keyInfo: [
+        { label: "Role", value: "Customer" },
+        { label: "Mentions", value: "12 linked clauses" },
+        { label: "Evidence status", value: "Verified" },
+      ],
+      dependencyChain: [
+        {
+          id: "dep-customer-payment",
+          label: "Payment obligation",
+          relationship: "Assigned to customer",
+          severity: "INFO",
+        },
+      ],
+      evidence: [
+        {
+          id: "ev-customer-1",
+          clauseRef: "Preamble",
+          page: 1,
+          excerpt: "Acme, Inc. is the customer receiving the hosted services",
+          validationStatus: "VERIFIED",
+        },
+      ],
+      commercialImpact:
+        "Customer role drives obligation, remedy, and risk interpretation in the demo.",
+      uncertainty:
+        "Affiliate and order-form party details are not included in this fixture.",
+      suggestedAction:
+        "Confirm whether affiliates can use the services or claim remedies.",
+      history: [
+        { label: "Detected", detail: "Party mention matched across clauses" },
+        { label: "Validation", detail: "Evidence matched source excerpt" },
+      ],
+    },
+    {
+      id: "payment-obligation",
+      nodeId: "payment-obligation",
+      clauseRef: "Section 4.1",
+      title: "Customer payment obligation",
+      nodeType: "OBLIGATION",
+      severity: "MEDIUM",
+      confidence: 0.86,
+      labels: ["FACT", "COMMERCIAL_RISK"],
+      summary:
+        "The customer payment obligation is clear and links to the termination path for uncured non-payment.",
+      keyInfo: [
+        { label: "Actor", value: "Customer" },
+        { label: "Deadline", value: "30 days" },
+        { label: "Evidence status", value: "Verified" },
+      ],
+      dependencyChain: [
+        {
+          id: "dep-payment-fees",
+          label: "Fees clause",
+          relationship: "Defines invoice timing",
+          severity: "INFO",
+        },
+        {
+          id: "dep-payment-term",
+          label: "Termination",
+          relationship: "Affected by uncured breach",
+          severity: "MEDIUM",
+        },
+      ],
+      evidence: [
+        {
+          id: "ev-payment-1",
+          clauseRef: "4.1",
+          page: 6,
+          excerpt: "Customer will pay undisputed invoices within thirty days",
+          validationStatus: "VERIFIED",
+        },
+      ],
+      commercialImpact:
+        "Late payment can connect to suspension or termination if notice and cure requirements are met.",
+      uncertainty:
+        "The fixture does not include billing exhibits or disputed invoice workflow details.",
+      suggestedAction:
+        "Check whether payment disputes preserve service access during review.",
+      history: [
+        { label: "Detected", detail: "Obligation extracted from modal verb" },
+        { label: "Validation", detail: "Linked to fees and termination nodes" },
+      ],
+    },
+    {
+      id: "cure-condition",
+      nodeId: "cure-period",
+      clauseRef: "Section 9.3",
+      title: "Breach cure condition",
+      nodeType: "CONDITION",
+      severity: "LOW",
+      confidence: 0.8,
+      labels: ["STRUCTURAL_DIAGNOSTIC"],
+      summary:
+        "The cure period condition gates the termination right after written notice.",
+      keyInfo: [
+        { label: "Duration", value: "15 days" },
+        { label: "Trigger", value: "Written notice" },
+        { label: "Evidence status", value: "Verified" },
+      ],
+      dependencyChain: [
+        {
+          id: "dep-cure-term",
+          label: "Termination right",
+          relationship: "Triggered when uncured",
+          severity: "LOW",
+        },
+      ],
+      evidence: [
+        {
+          id: "ev-cure-1",
+          clauseRef: "9.3",
+          page: 12,
+          excerpt: "after fifteen days from written notice of material breach",
+          validationStatus: "VERIFIED",
+        },
+      ],
+      commercialImpact:
+        "Short cure windows may require operational readiness for breach response.",
+      uncertainty:
+        "Notice delivery mechanics are not represented in this sample graph.",
+      suggestedAction:
+        "Confirm notice addresses and delivery method before relying on the cure path.",
+      history: [
+        { label: "Detected", detail: "Condition linked from termination clause" },
+        { label: "Validation", detail: "Evidence matched source excerpt" },
+      ],
+    },
+    {
+      id: "service-credit-right",
+      nodeId: "service-credit",
+      clauseRef: "Section 7.4",
+      title: "Service credit remedy",
+      nodeType: "RIGHT",
+      severity: "MEDIUM",
+      confidence: 0.78,
+      labels: ["COMMERCIAL_RISK", "NEGOTIATION_SUGGESTION"],
+      summary:
+        "The customer has a service credit remedy that may interact with the aggregate liability cap.",
+      keyInfo: [
+        { label: "Beneficiary", value: "Customer" },
+        { label: "Linked cap", value: "Section 11.2" },
+        { label: "Evidence status", value: "Partially verified" },
+      ],
+      dependencyChain: [
+        {
+          id: "dep-credit-cap",
+          label: "Liability cap",
+          relationship: "May affect available recovery",
+          severity: "MEDIUM",
+        },
+      ],
+      evidence: [
+        {
+          id: "ev-credit-1",
+          clauseRef: "7.4",
+          page: 10,
+          excerpt: "service credits are customer sole remedy for availability failure",
+          validationStatus: "PARTIALLY_VERIFIED",
+        },
+      ],
+      commercialImpact:
+        "Sole-remedy language can narrow practical recovery for availability issues.",
+      uncertainty:
+        "Availability schedule details are summarized in the fixture and need source review.",
+      suggestedAction:
+        "Consider whether service credits should be cumulative with other outage remedies.",
+      history: [
+        { label: "Detected", detail: "Right linked to service level language" },
+        { label: "Validation", detail: "Needs schedule confirmation" },
+      ],
+    },
+    {
+      id: "cap-risk",
+      nodeId: "cap-risk",
+      clauseRef: "Sections 7.4 / 11.2",
+      title: "Cap mismatch finding",
+      nodeType: "FINDING",
+      severity: "HIGH",
+      confidence: 0.81,
+      labels: ["COMMERCIAL_RISK", "UNCERTAIN"],
+      summary:
+        "The graph links service credits and damages to the same cap path, creating a commercial review signal.",
+      keyInfo: [
+        { label: "Finding type", value: "Commercial risk" },
+        { label: "Linked clauses", value: "7.4, 11.2" },
+        { label: "Review status", value: "Open" },
+      ],
+      dependencyChain: [
+        {
+          id: "dep-risk-credit",
+          label: "Service credit",
+          relationship: "Feeds risk path",
+          severity: "MEDIUM",
+        },
+        {
+          id: "dep-risk-cap",
+          label: "Liability cap",
+          relationship: "Supports finding",
+          severity: "HIGH",
+        },
+      ],
+      evidence: [
+        {
+          id: "ev-risk-1",
+          clauseRef: "11.2",
+          page: 14,
+          excerpt: "fees paid in the six months before the claim",
+          validationStatus: "PARTIALLY_VERIFIED",
+        },
+      ],
+      commercialImpact:
+        "Potential remedy limits should be reviewed before treating credits as sufficient protection.",
+      uncertainty:
+        "This is not a legal enforceability conclusion and does not account for governing law.",
+      suggestedAction:
+        "Ask counsel or deal owners whether outage remedies need a separate negotiated carveout.",
+      history: [
+        { label: "Detected", detail: "Graph path connected credits to cap" },
+        { label: "Validation", detail: "Reviewer confirmation required" },
+      ],
+    },
   ],
   executiveSummary: [
     "The sample agreement has strong clause structure and most key obligations are linked to evidence.",
