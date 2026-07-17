@@ -5,22 +5,24 @@ export function MetricGrid({ metrics }: MetricGridProps) {
   return (
     <section
       aria-label="Dashboard metrics"
-      className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4"
+      className="grid gap-2 md:grid-cols-2 xl:grid-cols-4"
     >
       {metrics.map((metric) => (
         <article
-          className="min-h-28 rounded-md border border-border bg-surface p-4"
+          className="min-w-0 rounded-md border border-border bg-surface p-3"
           key={metric.id}
         >
           <div
-            className={`inline-flex rounded-sm border px-2 py-1 text-xs font-medium ${metricTone[metric.tone]}`}
+            className={`inline-flex max-w-full rounded-sm border px-2 py-1 text-xs font-medium ${metricTone[metric.tone]}`}
           >
-            {metric.label}
+            <span className="truncate">{metric.label}</span>
           </div>
-          <p className="mt-4 text-3xl font-semibold tracking-normal">
+          <p className="mt-2 text-2xl font-semibold tracking-normal">
             {metric.value}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">{metric.detail}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {metric.detail}
+          </p>
         </article>
       ))}
     </section>
