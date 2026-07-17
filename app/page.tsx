@@ -16,6 +16,8 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  WandSparkles,
+  X,
 } from "lucide-react";
 
 import { demoAnalysis } from "@/features/demo/fixture";
@@ -23,7 +25,9 @@ import type {
   DemoFinding,
   DemoGraphEdge,
   DemoGraphNode,
+  DemoInspector,
   DemoMetric,
+  PresentationLabel,
 } from "@/features/demo/types";
 
 const metricTone: Record<DemoMetric["tone"], string> = {
@@ -63,11 +67,27 @@ const graphLegend = [
   { label: "Risk", color: "#ef4444" },
 ];
 
+const labelTone: Record<PresentationLabel, string> = {
+  FACT: "border-primary/30 bg-primary/10 text-primary",
+  STRUCTURAL_DIAGNOSTIC: "border-primary/30 bg-primary/10 text-primary",
+  CONTRACT_SMELL: "border-warning/30 bg-warning/10 text-warning",
+  COMMERCIAL_RISK: "border-danger/30 bg-danger/10 text-danger",
+  LEGAL_REVIEW_SIGNAL: "border-warning/30 bg-warning/10 text-warning",
+  NEGOTIATION_SUGGESTION: "border-ai-accent/30 bg-ai-accent/10 text-ai-accent",
+  UNCERTAIN: "border-border bg-surface-raised text-muted-foreground",
+};
+
+const inspectorTabs = ["summary", "evidence", "dependencies", "history"] as const;
+type InspectorTab = (typeof inspectorTabs)[number];
+
 export default function Home() {
   const analysis = demoAnalysis;
   const [selectedInspectorId, setSelectedInspectorId] = useState(
     analysis.defaultInspectorId,
   );
+  const [activeInspectorTab, setActiveInspectorTab] =
+    useState<InspectorTab>("summary");
+  const [inspectorOpen, setInspectorOpen] = useState(true);
   const selectedInspector =
     analysis.inspectors.find(
       (inspector) => inspector.id === selectedInspectorId,
@@ -244,7 +264,11 @@ export default function Home() {
               />
               <StaticContractGraph
                 graph={analysis.graph}
-                onSelectInspector={setSelectedInspectorId}
+                onSelectInspector={(inspectorId) => {
+                  setSelectedInspectorId(inspectorId);
+                  setActiveInspectorTab("summary");
+                  setInspectorOpen(true);
+                }}
                 selectedNodeId={selectedNodeId}
               />
             </section>
@@ -307,37 +331,27 @@ export default function Home() {
         </section>
 
         <aside className="border-t border-border bg-surface/85 px-4 py-5 xl:border-l xl:border-t-0 xl:px-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+          {inspectorOpen ? (
+            <ClauseInspector
+              activeTab={activeInspectorTab}
+              inspector={selectedInspector}
+              onClose={() => setInspectorOpen(false)}
+              onTabChange={setActiveInspectorTab}
+            />
+          ) : (
+            <div className="rounded-md border border-border bg-background/55 p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Inspector
               </p>
-              <h2 className="mt-2 text-base font-semibold">
-                {selectedInspector.title}
-              </h2>
-            </div>
-            <span className="rounded-sm border border-border bg-background px-2 py-1 font-mono text-xs text-muted-foreground">
-              {selectedInspector.clauseRef}
-            </span>
-          </div>
-
-          <div className="mt-5 rounded-md border border-border bg-background/55 p-4">
-            <p className="text-sm leading-6 text-muted-foreground">
-              {selectedInspector.summary}
-            </p>
-          </div>
-
-          <dl className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            {selectedInspector.keyInfo.map((item) => (
-              <div
-                className="rounded-md border border-border bg-background/55 p-3"
-                key={item.label}
+              <button
+                className="mt-3 inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground transition hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                onClick={() => setInspectorOpen(true)}
+                type="button"
               >
-                <dt className="text-xs text-muted-foreground">{item.label}</dt>
-                <dd className="mt-1 text-sm text-foreground">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
+                Open selected clause
+              </button>
+            </div>
+          )}
         </aside>
       </div>
     </main>
@@ -361,6 +375,234 @@ function ToolbarButton({
       <Icon aria-hidden={true} className="size-4" />
       <span className={compact ? "sr-only" : ""}>{label}</span>
     </button>
+  );
+}
+
+function ClauseInspector({
+  activeTab,
+  inspector,
+  onClose,
+  onTabChange,
+}: {
+  activeTab: InspectorTab;
+  inspector: DemoInspector;
+  onClose: () => void;
+  onTabChange: (tab: InspectorTab) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Clause inspector
+          </p>
+          <h2 className="mt-2 text-base font-semibold leading-6">
+            {inspector.title}
+          </h2>
+          <p className="mt-1 font-mono text-xs text-muted-foreground">
+            {inspector.clauseRef}
+          </p>
+        </div>
+        <button
+          aria-label="Close inspector"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition hover:border-danger/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          onClick={onClose}
+          type="button"
+        >
+          <X aria-hidden="true" className="size-4" />
+        </button>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="rounded-sm border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+          {inspector.nodeType}
+        </span>
+        {inspector.severity ? (
+          <span
+            className={`rounded-sm border px-2 py-1 text-xs font-medium ${severityTone[inspector.severity]}`}
+          >
+            {inspector.severity}
+          </span>
+        ) : null}
+        <span className="rounded-sm border border-border bg-background px-2 py-1 text-xs text-muted-foreground">
+          {Math.round(inspector.confidence * 100)}% confidence
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {inspector.labels.map((label) => (
+          <span
+            className={`rounded-sm border px-2 py-1 text-[11px] font-medium ${labelTone[label]}`}
+            key={label}
+          >
+            {formatLabel(label)}
+          </span>
+        ))}
+      </div>
+
+      <div
+        aria-label="Inspector tabs"
+        className="mt-5 grid grid-cols-4 rounded-md border border-border bg-background p-1"
+        role="tablist"
+      >
+        {inspectorTabs.map((tab) => (
+          <button
+            aria-selected={activeTab === tab}
+            className={`h-8 rounded-sm px-2 text-xs font-medium capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+              activeTab === tab
+                ? "bg-surface-raised text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            key={tab}
+            onClick={() => onTabChange(tab)}
+            role="tab"
+            type="button"
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5">
+        {activeTab === "summary" ? <InspectorSummary inspector={inspector} /> : null}
+        {activeTab === "evidence" ? <InspectorEvidence inspector={inspector} /> : null}
+        {activeTab === "dependencies" ? (
+          <InspectorDependencies inspector={inspector} />
+        ) : null}
+        {activeTab === "history" ? <InspectorHistory inspector={inspector} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function InspectorSummary({ inspector }: { inspector: DemoInspector }) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border border-border bg-background/55 p-4">
+        <p className="text-sm leading-6 text-muted-foreground">
+          {inspector.summary}
+        </p>
+      </div>
+
+      <dl className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+        {inspector.keyInfo.map((item) => (
+          <div
+            className="rounded-md border border-border bg-background/55 p-3"
+            key={item.label}
+          >
+            <dt className="text-xs text-muted-foreground">{item.label}</dt>
+            <dd className="mt-1 text-sm text-foreground">{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <InspectorNote title="Commercial impact" value={inspector.commercialImpact} />
+      <InspectorNote title="Uncertainty" value={inspector.uncertainty} />
+
+      <div className="rounded-md border border-ai-accent/30 bg-ai-accent/10 p-4">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-ai-accent">
+          Negotiation suggestion
+        </p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          {inspector.suggestedAction}
+        </p>
+        <button
+          className="mt-4 inline-flex h-9 items-center gap-2 rounded-md bg-ai-accent px-3 text-sm font-medium text-white transition hover:bg-ai-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ai-accent"
+          type="button"
+        >
+          <WandSparkles aria-hidden="true" className="size-4" />
+          Draft suggested action
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function InspectorEvidence({ inspector }: { inspector: DemoInspector }) {
+  return (
+    <div className="space-y-3">
+      {inspector.evidence.map((evidence) => (
+        <article
+          className="rounded-md border border-border bg-background/55 p-4"
+          key={evidence.id}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-mono text-xs text-muted-foreground">
+              {evidence.clauseRef} / page {evidence.page}
+            </p>
+            <span className="rounded-sm border border-border bg-surface px-2 py-1 text-[11px] text-muted-foreground">
+              {formatLabel(evidence.validationStatus)}
+            </span>
+          </div>
+          <blockquote className="mt-3 border-l-2 border-primary/60 pl-3 font-mono text-xs leading-6 text-foreground">
+            {evidence.excerpt}
+          </blockquote>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function InspectorDependencies({ inspector }: { inspector: DemoInspector }) {
+  return (
+    <div className="space-y-3">
+      {inspector.dependencyChain.map((dependency, index) => (
+        <article
+          className="rounded-md border border-border bg-background/55 p-4"
+          key={dependency.id}
+        >
+          <div className="flex items-start gap-3">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-sm border border-border bg-surface font-mono text-xs text-muted-foreground">
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-medium">{dependency.label}</h3>
+                {dependency.severity ? (
+                  <span
+                    className={`rounded-sm border px-2 py-0.5 text-[11px] font-medium ${severityTone[dependency.severity]}`}
+                  >
+                    {dependency.severity}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {dependency.relationship}
+              </p>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function InspectorHistory({ inspector }: { inspector: DemoInspector }) {
+  return (
+    <div className="space-y-3">
+      {inspector.history.map((item) => (
+        <article
+          className="rounded-md border border-border bg-background/55 p-4"
+          key={item.label}
+        >
+          <p className="text-sm font-medium">{item.label}</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {item.detail}
+          </p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function InspectorNote({ title, value }: { title: string; value: string }) {
+  return (
+    <section className="rounded-md border border-border bg-background/55 p-4">
+      <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{value}</p>
+    </section>
   );
 }
 
@@ -589,6 +831,14 @@ function edgeColor(pathType: DemoGraphEdge["pathType"]) {
   }
 
   return "#60a5fa";
+}
+
+function formatLabel(value: string) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function PanelHeader({
