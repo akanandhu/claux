@@ -1,13 +1,13 @@
-import { X } from "lucide-react";
+import { AlertCircle, CheckCircle2, GitBranch, Link2, X } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
+import type { BadgeTone } from "@/components/Badge/types";
 import { Button } from "@/components/Button";
-import { labelClass, severityTone } from "../constants";
+import { severityTone } from "../constants";
 import { formatLabel } from "../format";
 import { InspectorDependencies } from "../InspectorDependencies";
 import { InspectorEvidence } from "../InspectorEvidence";
 import { InspectorHistory } from "../InspectorHistory";
-import { InspectorSummary } from "../InspectorSummary";
 import type { ClauseInspectorProps, InspectorTab } from "./types";
 import { inspectorTabs } from "./types";
 
@@ -40,30 +40,9 @@ export function ClauseInspector({
         />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Badge tone="primary">{inspector.nodeType}</Badge>
-        {inspector.severity ? (
-          <Badge tone={severityTone[inspector.severity]}>
-            {inspector.severity}
-          </Badge>
-        ) : null}
-        <Badge>{Math.round(inspector.confidence * 100)}% confidence</Badge>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {inspector.labels.map((label) => (
-          <span
-            className={`rounded-sm border px-2 py-1 text-[11px] font-medium ${labelClass[label]}`}
-            key={label}
-          >
-            {formatLabel(label)}
-          </span>
-        ))}
-      </div>
-
       <div
         aria-label="Inspector tabs"
-        className="mt-5 grid grid-cols-4 rounded-md border border-border bg-background p-1"
+        className="mt-5 grid grid-cols-4 border-b border-border"
         role="tablist"
       >
         {inspectorTabs.map((tab) => (
@@ -77,7 +56,9 @@ export function ClauseInspector({
       </div>
 
       <div className="mt-5">
-        {activeTab === "summary" ? <InspectorSummary inspector={inspector} /> : null}
+        {activeTab === "summary" ? (
+          <InspectorOverview inspector={inspector} />
+        ) : null}
         {activeTab === "evidence" ? <InspectorEvidence inspector={inspector} /> : null}
         {activeTab === "dependencies" ? (
           <InspectorDependencies inspector={inspector} />
@@ -100,16 +81,132 @@ function TabButton({
   return (
     <button
       aria-selected={active}
-      className={`h-8 rounded-sm px-2 text-xs font-medium capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+      className={`h-9 border-b-2 px-2 text-xs font-medium capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
         active
-          ? "bg-surface-raised text-foreground"
-          : "text-muted-foreground hover:text-foreground"
+          ? "border-primary text-primary"
+          : "border-transparent text-muted-foreground hover:text-foreground"
       }`}
       onClick={onClick}
       role="tab"
       type="button"
     >
-      {tab}
+      {tab === "dependencies" ? "impact" : tab}
     </button>
+  );
+}
+
+function InspectorOverview({
+  inspector,
+}: {
+  inspector: ClauseInspectorProps["inspector"];
+}) {
+  const condition = inspector.dependencyChain.find((dependency) =>
+    dependency.relationship.toLowerCase().includes("condition"),
+  );
+  const consequence = inspector.dependencyChain.find((dependency) =>
+    dependency.relationship.toLowerCase().includes("impact"),
+  );
+
+  return (
+    <div className="space-y-4">
+      <section>
+        <h3 className="text-sm font-medium">In simple terms</h3>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          {inspector.summary}
+        </p>
+      </section>
+
+      <dl className="grid grid-cols-3 gap-2">
+        <InspectorStat label="Type" value={formatLabel(inspector.nodeType)} />
+        <InspectorStat
+          label="Risk level"
+          tone={inspector.severity ? severityTone[inspector.severity] : undefined}
+          value={inspector.severity ?? "INFO"}
+        />
+        <InspectorStat
+          label="Confidence"
+          tone="success"
+          value={`${Math.round(inspector.confidence * 100)}%`}
+        />
+      </dl>
+
+      <InspectorCard
+        icon={CheckCircle2}
+        title="Your obligations"
+        value={inspector.keyInfo[0]?.value ?? inspector.commercialImpact}
+      />
+      <InspectorCard
+        icon={GitBranch}
+        title="Conditions"
+        value={condition?.relationship ?? inspector.uncertainty}
+      />
+      <InspectorCard
+        icon={AlertCircle}
+        title="Consequences"
+        value={consequence?.relationship ?? inspector.commercialImpact}
+      />
+
+      <section>
+        <h3 className="text-sm font-medium">
+          Connected items ({inspector.dependencyChain.length})
+        </h3>
+        <div className="mt-3 space-y-2">
+          {inspector.dependencyChain.slice(0, 4).map((dependency) => (
+            <div
+              className="flex items-center justify-between gap-3 text-xs"
+              key={dependency.id}
+            >
+              <span className="truncate text-foreground">{dependency.label}</span>
+              <span className="shrink-0 text-muted-foreground">
+                {dependency.severity ? dependency.severity.toLowerCase() : "linked"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Button className="w-full" icon={Link2} variant="accent">
+        Add to negotiation list
+      </Button>
+    </div>
+  );
+}
+
+function InspectorStat({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone?: BadgeTone;
+  value: string;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-background/55 p-3">
+      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+      <dd className="mt-2">
+        <Badge tone={tone}>{value}</Badge>
+      </dd>
+    </div>
+  );
+}
+
+function InspectorCard({
+  icon: Icon,
+  title,
+  value,
+}: {
+  icon: typeof CheckCircle2;
+  title: string;
+  value: string;
+}) {
+  return (
+    <section className="rounded-md border border-border bg-background/55 p-4">
+      <div className="flex items-center gap-2">
+        <Icon aria-hidden="true" className="size-4 text-primary" />
+        <h3 className="text-sm font-medium">{title}</h3>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">{value}</p>
+    </section>
   );
 }

@@ -58,7 +58,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="grid min-h-screen grid-cols-1 xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
-        <Sidebar roleLabel={roleLabels[reviewerRole]} />
+        <Sidebar analysis={analysis} roleLabel={roleLabels[reviewerRole]} />
         <section className="flex min-w-0 flex-col">
           <div className="sticky top-0 z-20">
             <TopBar contract={analysis.contract} />
@@ -66,6 +66,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           <DashboardMain
             analysis={analysis}
             onSelectInspector={selectInspector}
+            selectedInspector={selectedInspector}
             selectedNodeId={selectedNodeId}
           />
         </section>

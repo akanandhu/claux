@@ -9,7 +9,7 @@ export function GraphToolbar() {
       <div className="flex flex-wrap items-center gap-3">
         {graphLegend.map((item) => (
           <span
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground"
+            className="inline-flex items-center gap-2 rounded-sm border border-border bg-background/55 px-2 py-1 text-xs text-muted-foreground"
             key={item.label}
           >
             <span
