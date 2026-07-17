@@ -111,7 +111,10 @@ export default function Home() {
               </div>
             </div>
 
-            <button className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface-raised px-3 text-xs font-medium text-foreground transition hover:border-primary/50 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary xl:mt-6 xl:w-full xl:justify-center">
+            <button
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface-raised px-3 text-xs font-medium text-foreground transition hover:border-primary/50 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary xl:mt-6 xl:w-full xl:justify-center"
+              type="button"
+            >
               <RefreshCw aria-hidden="true" className="size-4" />
               Replace document
             </button>
@@ -201,7 +204,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                 <label className="relative min-w-0 sm:w-72">
                   <span className="sr-only">Search clauses, risks, evidence</span>
                   <Search
@@ -214,11 +217,14 @@ export default function Home() {
                     type="search"
                   />
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <ToolbarButton icon={GitBranch} label="Compare" />
                   <ToolbarButton icon={Download} label="Export" />
                   <ToolbarButton icon={Settings} label="Settings" compact />
-                  <button className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-white transition hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+                  <button
+                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-white transition hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                    type="button"
+                  >
                     <Bot aria-hidden="true" className="size-4" />
                     Ask
                   </button>
