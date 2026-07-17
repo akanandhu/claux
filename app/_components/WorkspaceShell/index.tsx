@@ -118,7 +118,7 @@ function InitialUploadScreen({
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="grid min-h-screen grid-cols-1 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="flex min-h-screen items-center justify-center px-4 py-10 lg:px-8">
         <section className="flex min-w-0 items-center justify-center px-4 py-10 lg:px-8">
           <div className="w-full max-w-2xl">
             <div className="mb-10 flex items-center gap-3">
@@ -197,10 +197,6 @@ function InitialUploadScreen({
             </div>
           </div>
         </section>
-
-        <aside className="border-t border-border bg-surface/85 px-4 py-5 xl:border-l xl:border-t-0 xl:px-5">
-          <TypewriterPlaceholder />
-        </aside>
       </div>
     </main>
   );
@@ -228,24 +224,5 @@ function RoleButton({
     >
       {children}
     </button>
-  );
-}
-
-function TypewriterPlaceholder() {
-  return (
-    <div className="rounded-md border border-border bg-background/55 p-4 xl:sticky xl:top-5">
-      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Clause test area
-      </p>
-      <h2 className="mt-3 text-xl font-semibold">Hello.</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        Sample clause files will attach here for testing before analysis starts.
-      </p>
-      <div className="mt-8 rounded-md border border-border bg-surface/75 p-3 font-mono text-xs text-muted-foreground">
-        <p className="clause-typewriter">
-          Waiting for a legal clause...
-        </p>
-      </div>
-    </div>
   );
 }
