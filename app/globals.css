@@ -58,3 +58,40 @@ button:disabled {
 * {
   scrollbar-color: var(--border) var(--background);
 }
+
+.clause-typewriter {
+  animation:
+    clause-type 3.2s steps(29, end) infinite,
+    clause-caret 0.9s step-end infinite;
+  border-right: 1px solid var(--foreground);
+  max-width: max-content;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+@keyframes clause-type {
+  0%,
+  12% {
+    width: 0;
+  }
+
+  62%,
+  82% {
+    width: 29ch;
+  }
+
+  100% {
+    width: 0;
+  }
+}
+
+@keyframes clause-caret {
+  0%,
+  100% {
+    border-color: transparent;
+  }
+
+  50% {
+    border-color: var(--foreground);
+  }
+}
