@@ -1,6 +1,5 @@
 import { Badge } from "@/components/Badge";
 import { GraphPanel } from "../GraphPanel";
-import { MetricGrid } from "../MetricGrid";
 import type { DashboardMainProps } from "./types";
 
 export function DashboardMain({
@@ -11,7 +10,6 @@ export function DashboardMain({
 }: DashboardMainProps) {
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-5">
-      <MetricGrid metrics={analysis.metrics} />
       <GraphPanel
         graph={analysis.graph}
         onSelectInspector={onSelectInspector}
