@@ -1,7 +1,6 @@
-import { Bot, Search, UserRound } from "lucide-react";
+import { Search, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
-import { Button } from "@/components/Button";
 import type { TopBarProps } from "./types";
 
 export function TopBar({ contract }: TopBarProps) {
@@ -9,7 +8,7 @@ export function TopBar({ contract }: TopBarProps) {
     <header className="sticky top-0 z-20 border-b border-border bg-background/95 px-4 py-2 backdrop-blur lg:px-5">
       <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <Badge tone={contract.requiresPartyClarification ? "warning" : "success"}>
+          <Badge tone={contract.requiresPartyClarification ? "warning" : "primary"}>
             {contract.requiresPartyClarification
               ? "Needs confirmation"
               : "Inferred party"}
@@ -43,7 +42,7 @@ export function TopBar({ contract }: TopBarProps) {
             </details>
           ) : null}
         </div>
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        {/* <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           <label className="relative min-w-0 sm:w-72">
             <span className="sr-only">Search clauses, risks, evidence</span>
             <Search
@@ -56,10 +55,7 @@ export function TopBar({ contract }: TopBarProps) {
               type="search"
             />
           </label>
-          <Button icon={Bot} size="sm" variant="primary">
-            Ask
-          </Button>
-        </div>
+        </div> */}
       </div>
     </header>
   );
