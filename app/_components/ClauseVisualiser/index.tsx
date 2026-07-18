@@ -29,10 +29,11 @@ import {
 import {
   branchBottomY,
   branchGap,
-  branchPositions,
   branchRootY,
   branchTopY,
+  hierarchyPositions,
   hierarchyEdges,
+  resolveNodeCollisions,
 } from "./layout";
 import type { ClauseVisualiserProps } from "./types";
 
@@ -262,18 +263,18 @@ function hierarchyNodes(
   root: Node<FlowNodeData>,
   children: Node<FlowNodeData>[],
 ) {
-  const positions = branchPositions(children.length);
+  const positions = hierarchyPositions(children.length);
 
-  return [
+  return resolveNodeCollisions([
     {
       ...root,
-      position: { x: positions.rootX, y: branchRootY },
+      position: { x: positions.rootX, y: positions.rootY },
     },
     ...children.map((child, index) => ({
       ...child,
       position: positions.children[index]!,
     })),
-  ];
+  ]);
 }
 
 function riskTone(risk: "Low" | "Medium" | "High"): FlowTone {
@@ -287,7 +288,7 @@ function clauseFlowNodes(
 ): Node<FlowNodeData>[] {
   const { clause, section } = selection;
 
-  return [
+  return resolveNodeCollisions([
     {
       data: {
         clauses: `${section.count} clauses`,
@@ -332,7 +333,7 @@ function clauseFlowNodes(
       position: { x: branchGap * 2, y: branchBottomY },
       type: "section",
     },
-  ];
+  ]);
 }
 
 function clauseFlowEdges(clauseId: string): Edge[] {
