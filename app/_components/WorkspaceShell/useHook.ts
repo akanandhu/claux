@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 
 import { buildLiveAnalysisFixture } from "@/features/analysis/fixture-adapter";
+import {
+  analysisLimitMessage,
+  useAnalysisLimiterStore,
+} from "@/app/_stores/analysisLimiter";
 import type { DemoAnalysisFixture } from "@/features/demo/types";
 import { extractContractDocument } from "@/features/ingestion/extract";
 import { segmentContractClauses } from "@/features/ingestion/segment";
@@ -63,6 +67,7 @@ export function useWorkspaceSelection(analysis: DemoAnalysisFixture) {
 }
 
 export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["analysis"]) {
+  const consumeAnalysis = useAnalysisLimiterStore((state) => state.consumeAnalysis);
   const [liveAnalysis, setLiveAnalysis] =
     useState<WorkspaceShellProps["analysis"] | null>(null);
   const activeAnalysis = liveAnalysis ?? initialAnalysis;
@@ -115,6 +120,18 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
       setJob((current) => ({ ...current, document, stage: "segmenting" }));
       await yieldToPaint();
       const clauses = segmentContractClauses(document);
+      const limitResult = consumeAnalysis();
+
+      if (!limitResult.allowed) {
+        setJob({
+          clauses,
+          document,
+          error: analysisLimitMessage(limitResult),
+          parties: [],
+          stage: "failed",
+        });
+        return;
+      }
 
       await analyzeLiveContract({
         clauses,
