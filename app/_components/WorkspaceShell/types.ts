@@ -32,5 +32,6 @@ export type LiveJob = {
   document: ParsedDocument | null;
   error: string | null;
   parties: Party[];
+  startedAt: number | null;
   stage: JobStage;
 };

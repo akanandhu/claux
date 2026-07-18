@@ -32,10 +32,21 @@ export function jobStageLabel(stage: JobStage) {
   return labels[stage];
 }
 
-export function jobStageDescription(stage: JobStage) {
+export function jobStageDescription(stage: JobStage, elapsedSeconds = 0) {
+  if (stage === "analyzing") {
+    if (elapsedSeconds >= 45) {
+      return "Claux is still analyzing the source clauses and checking the contract structure. Keep this tab open.";
+    }
+
+    if (elapsedSeconds >= 20) {
+      return "Claux is analyzing clause relationships, parties, evidence, and role-aware risk signals.";
+    }
+
+    return "Claux is analyzing the source clauses. Larger contracts can take a little longer.";
+  }
+
   const descriptions: Record<JobStage, string> = {
-    analyzing:
-      "OpenAI is analyzing the source clauses. Larger contracts can take a little longer.",
+    analyzing: "Claux is analyzing the source clauses.",
     building_view: "Preparing the graph, metrics, findings, and inspector views.",
     completed: "Analysis completed.",
     extracting: "Reading text locally from the selected file.",

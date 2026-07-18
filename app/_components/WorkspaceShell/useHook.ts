@@ -96,6 +96,7 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
     document: null,
     error: null,
     parties: [],
+    startedAt: null,
     stage: "idle",
   });
   const [inspectorHistory, setInspectorHistory] = useState<string[]>([]);
@@ -137,6 +138,7 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
         document: persistedSession.document,
         error: persistedSession.error,
         parties: persistedSession.parties,
+        startedAt: null,
         stage: persistedSession.jobStage,
       });
       setRestoredSessionId(persistedSession.id);
@@ -146,6 +148,8 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
   }, [persistedSession, persistenceHydrated, restoredSessionId]);
 
   async function handleUpload(file: File) {
+    const uploadStartedAt = Date.now();
+
     setUploadedFileName(file.name);
     setWorkspaceReady(false);
     setLiveAnalysis(null);
@@ -160,6 +164,7 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
         document: null,
         error: null,
         parties: [],
+        startedAt: uploadStartedAt,
         stage: "validating",
       });
       await yieldToPaint();
@@ -188,6 +193,7 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
           document,
           error: analysisLimitMessage(limitResult),
           parties: [],
+          startedAt: uploadStartedAt,
           stage: "failed",
         });
         return;
@@ -207,6 +213,7 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
         document: null,
         error: errorMessage(error),
         parties: [],
+        startedAt: uploadStartedAt,
         stage: "failed",
       });
     }
@@ -221,6 +228,7 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
       document: null,
       error: null,
       parties: [],
+      startedAt: null,
       stage: "idle",
     });
     setWorkspaceReady(true);
@@ -416,6 +424,7 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
         document: null,
         error: null,
         parties: [],
+        startedAt: null,
         stage: "idle",
       });
     },

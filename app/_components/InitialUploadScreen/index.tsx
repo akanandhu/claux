@@ -10,6 +10,7 @@ import { isBusyStage, jobStageDescription, jobStageLabel } from "./utils";
 
 export function InitialUploadScreen({
   error,
+  jobStartedAt,
   jobStage,
   onOpenDemo,
   onRoleChange,
@@ -18,6 +19,7 @@ export function InitialUploadScreen({
   uploadedFileName,
 }: {
   error: string | null;
+  jobStartedAt: number | null;
   jobStage: JobStage;
   onOpenDemo: () => void;
   onRoleChange: (role: ReviewerRole) => void;
@@ -27,7 +29,10 @@ export function InitialUploadScreen({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = isBusyStage(jobStage);
-  const elapsedSeconds = useElapsedSeconds(isLoading);
+  const elapsedSeconds = useElapsedSeconds({
+    active: isLoading,
+    startedAt: jobStartedAt,
+  });
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -139,7 +144,7 @@ export function InitialUploadScreen({
                         {jobStageLabel(jobStage)}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        {jobStageDescription(jobStage)}
+                        {jobStageDescription(jobStage, elapsedSeconds)}
                       </p>
                       <p className="mt-2 font-mono text-[11px] text-muted-foreground">
                         Elapsed {elapsedSeconds}s
@@ -148,8 +153,10 @@ export function InitialUploadScreen({
                   </div>
                   <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background">
                     <div
-                      className="h-full rounded-full bg-primary transition-all"
-                      style={{ width: `${stageProgress(jobStage)}%` }}
+                      className={`h-full rounded-full bg-primary transition-all ${
+                        jobStage === "analyzing" ? "animate-pulse" : ""
+                      }`}
+                      style={{ width: `${stageProgress(jobStage, elapsedSeconds)}%` }}
                     />
                   </div>
                 </div>
@@ -174,32 +181,55 @@ export function InitialUploadScreen({
   );
 }
 
-function useElapsedSeconds(active: boolean) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+function useElapsedSeconds({
+  active,
+  startedAt,
+}: {
+  active: boolean;
+  startedAt: number | null;
+}) {
+  const [timer, setTimer] = useState({
+    elapsedSeconds: 0,
+    startedAt,
+  });
 
   useEffect(() => {
-    if (!active) {
-      const resetId = window.setTimeout(() => setElapsedSeconds(0), 0);
+    if (!active || !startedAt) {
+      const resetId = window.setTimeout(
+        () => setTimer({ elapsedSeconds: 0, startedAt }),
+        0,
+      );
 
       return () => window.clearTimeout(resetId);
     }
 
-    const startedAt = Date.now();
-    const resetId = window.setTimeout(() => setElapsedSeconds(0), 0);
+    const resetId = window.setTimeout(
+      () => setTimer({ elapsedSeconds: 0, startedAt }),
+      0,
+    );
     const intervalId = window.setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+      setTimer({
+        elapsedSeconds: Math.floor((Date.now() - startedAt) / 1000),
+        startedAt,
+      });
     }, 1000);
 
     return () => {
       window.clearTimeout(resetId);
       window.clearInterval(intervalId);
     };
-  }, [active]);
+  }, [active, startedAt]);
 
-  return elapsedSeconds;
+  if (!active || !startedAt || timer.startedAt !== startedAt) return 0;
+
+  return timer.elapsedSeconds;
 }
 
-function stageProgress(stage: JobStage) {
+function stageProgress(stage: JobStage, elapsedSeconds: number) {
+  if (stage === "analyzing") {
+    return Math.min(88, 62 + Math.floor(elapsedSeconds / 3));
+  }
+
   const progress: Record<JobStage, number> = {
     analyzing: 62,
     building_view: 92,

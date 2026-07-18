@@ -17,6 +17,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
     return (
       <InitialUploadScreen
         error={workspace.job.error}
+        jobStartedAt={workspace.job.startedAt}
         jobStage={workspace.job.stage}
         onOpenDemo={workspace.openDemoWorkspace}
         onRoleChange={workspace.setReviewerRole}
