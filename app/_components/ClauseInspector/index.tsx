@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, GitBranch, Link2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, GitBranch, Link2 } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
 import type { BadgeTone } from "@/components/Badge/types";
@@ -14,16 +14,12 @@ import { inspectorTabs } from "./types";
 export function ClauseInspector({
   activeTab,
   inspector,
-  onClose,
   onTabChange,
 }: ClauseInspectorProps) {
   return (
     <div>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Clause inspector
-          </p>
           <h2 className="mt-2 text-base font-semibold leading-6">
             {inspector.title}
           </h2>
@@ -31,13 +27,6 @@ export function ClauseInspector({
             {inspector.clauseRef}
           </p>
         </div>
-        <Button
-          icon={X}
-          iconOnlyLabel="Close inspector"
-          onClick={onClose}
-          size="icon"
-          variant="danger"
-        />
       </div>
 
       <div

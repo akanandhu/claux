@@ -182,7 +182,7 @@ function RightSidebar({
           onClick={() => setIsOpen(true)}
           size="icon"
         />
-        <div className="mt-4 hidden rotate-90 whitespace-nowrap text-xs uppercase tracking-[0.18em] text-muted-foreground xl:block">
+        <div className="mt-12 hidden rotate-90 whitespace-nowrap text-xs uppercase tracking-[0.18em] text-muted-foreground xl:block">
           Inspector
         </div>
       </aside>
@@ -221,28 +221,15 @@ function RightSidebar({
           />
         </div>
       </div>
-      {view === "summary" ? <ContractBrief contractType={contractType} /> : null}
+      {view === "summary" ? (
+        <ContractBrief contractType={contractType} />
+      ) : null}
       {view === "inspector" && inspectorOpen ? (
-        <div>
-          <div className="mb-4 rounded-md border border-border bg-background/55 p-3 text-xs text-muted-foreground">
-            <div className="flex items-center justify-between gap-3">
-              <span>Inspecting selected clause</span>
-              <button
-                className="font-medium text-primary hover:text-foreground"
-                onClick={onShowSummary}
-                type="button"
-              >
-                Summary
-              </button>
-            </div>
-          </div>
-          <ClauseInspector
-            activeTab={activeInspectorTab}
-            inspector={selectedInspector}
-            onClose={onShowSummary}
-            onTabChange={setActiveInspectorTab}
-          />
-        </div>
+        <ClauseInspector
+          activeTab={activeInspectorTab}
+          inspector={selectedInspector}
+          onTabChange={setActiveInspectorTab}
+        />
       ) : null}
       {view === "inspector" && !inspectorOpen ? (
         <div className="rounded-md border border-border bg-background/55 p-4">
