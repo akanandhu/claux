@@ -11,6 +11,7 @@ import {
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 import { SidebarOverviewMetric } from "../SidebarOverviewMetric";
 import type { SidebarProps } from "./types";
 
@@ -49,13 +50,20 @@ export function Sidebar({
               </p>
               <p className="text-xs text-muted-foreground">Uploaded contract</p>
             </div>
-            <Button
-              className="shrink-0"
-              icon={Trash2}
-              iconOnlyLabel="Remove document"
-              onClick={onClearWorkspace}
-              size="icon"
-              variant="danger"
+            <ConfirmationDialog
+              confirmLabel="Remove document"
+              description={`This will remove ${contractFileName} from the current browser workspace.`}
+              onConfirm={onClearWorkspace}
+              title="Remove current document?"
+              trigger={
+                <Button
+                  className="shrink-0"
+                  icon={Trash2}
+                  iconOnlyLabel="Remove document"
+                  size="icon"
+                  variant="danger"
+                />
+              }
             />
           </div>
           <Button className="h-11 w-full justify-center text-center" icon={UserRound}>
