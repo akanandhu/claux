@@ -6,6 +6,7 @@ export type SidebarProps = {
   activeSectionId: string | null;
   analysis: DemoAnalysisFixture;
   contractFileName: string;
+  onClearWorkspace: () => void;
   onSelectClause: (clauseId: string, sectionId: string) => void;
   onSelectSection: (sectionId: string) => void;
   outline: ContractSection[];

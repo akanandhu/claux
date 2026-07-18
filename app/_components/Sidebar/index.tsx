@@ -5,6 +5,7 @@ import {
   ChevronRight,
   FileText,
   Search,
+  Trash2,
   UserRound,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ export function Sidebar({
   activeSectionId,
   analysis,
   contractFileName,
+  onClearWorkspace,
   onSelectClause,
   onSelectSection,
   outline,
@@ -47,6 +49,14 @@ export function Sidebar({
               </p>
               <p className="text-xs text-muted-foreground">Uploaded contract</p>
             </div>
+            <Button
+              className="shrink-0"
+              icon={Trash2}
+              iconOnlyLabel="Remove document"
+              onClick={onClearWorkspace}
+              size="icon"
+              variant="danger"
+            />
           </div>
           <Button className="h-11 w-full justify-center text-center" icon={UserRound}>
             {reviewerRoleLabel}

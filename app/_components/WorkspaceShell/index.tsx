@@ -44,6 +44,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           contractFileName={
             workspace.uploadedFileName ?? workspace.activeAnalysis.contract.fileName
           }
+          onClearWorkspace={workspace.clearWorkspace}
           onSelectClause={workspace.handleSelectClause}
           onSelectSection={workspace.handleSelectSection}
           outline={workspace.outline}
@@ -51,10 +52,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
         />
         <section className="flex min-w-0 flex-col">
           <div className="sticky top-0 z-20">
-            <TopBar
-              contract={workspace.activeAnalysis.contract}
-              onClearWorkspace={workspace.clearWorkspace}
-            />
+            <TopBar contract={workspace.activeAnalysis.contract} />
           </div>
           <WorkspaceStatusBanner stage={workspace.job.stage} />
           <DashboardMain
