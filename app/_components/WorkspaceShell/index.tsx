@@ -4,6 +4,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
+  ChevronRight,
   FileUp,
   Loader2,
   PanelRightClose,
@@ -16,14 +17,19 @@ import { ClauseInspector } from "../ClauseInspector";
 import { DashboardMain } from "../DashboardMain";
 import { Sidebar } from "../Sidebar";
 import { TopBar } from "../TopBar";
-import { findContractClause, findContractSection } from "../contractOutline";
+import {
+  contractOutline,
+  findContractClause,
+  findContractSection,
+  type ContractSection,
+} from "../contractOutline";
 import { useWorkspaceSelection } from "./useHook";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import type { WorkspaceShellProps } from "./types";
 
 type ReviewerRole = "received" | "prepared";
-type RightSidebarView = "summary" | "clause" | "inspector";
+type RightSidebarView = "summary" | "section" | "clause" | "inspector";
 
 const roleLabels: Record<ReviewerRole, string> = {
   prepared: "I prepared this contract",
@@ -43,6 +49,9 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
   const [inspectorHistory, setInspectorHistory] = useState<string[]>([]);
   const [activeClauseId, setActiveClauseId] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [rightSidebarSectionId, setRightSidebarSectionId] = useState<
+    string | null
+  >(null);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarView, setRightSidebarView] =
     useState<RightSidebarView>("summary");
@@ -81,16 +90,33 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
 
   function handleSelectSection(sectionId: string) {
     setActiveSectionId(sectionId);
+    setRightSidebarSectionId(sectionId);
     setActiveClauseId(null);
     setRightSidebarOpen(true);
-    setRightSidebarView("summary");
+    setRightSidebarView("section");
   }
 
   function handleSelectClause(clauseId: string, sectionId: string) {
     setActiveClauseId(clauseId);
     setActiveSectionId(sectionId);
+    setRightSidebarSectionId(sectionId);
     setRightSidebarOpen(true);
     setRightSidebarView("clause");
+  }
+
+  function previewSection(sectionId: string) {
+    setRightSidebarSectionId(sectionId);
+    setActiveClauseId(null);
+    setRightSidebarOpen(true);
+    setRightSidebarView("section");
+  }
+
+  function viewSectionFlow(sectionId: string) {
+    setActiveSectionId(sectionId);
+    setActiveClauseId(null);
+    setRightSidebarSectionId(sectionId);
+    setRightSidebarOpen(true);
+    setRightSidebarView("section");
   }
 
   function showContractSummary() {
@@ -98,6 +124,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
     setInspectorHistory([]);
     setActiveClauseId(null);
     setActiveSectionId(null);
+    setRightSidebarSectionId(null);
   }
 
   function showPreviousInspector() {
@@ -167,9 +194,12 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           inspectorOpen={inspectorOpen}
           isOpen={rightSidebarOpen}
           onBack={showPreviousInspector}
+          onPreviewSection={previewSection}
+          onSelectClause={handleSelectClause}
           onShowSummary={showContractSummary}
+          onViewSectionFlow={viewSectionFlow}
           selectedInspector={selectedInspector}
-          selectedSection={findContractSection(activeSectionId)}
+          selectedSection={findContractSection(rightSidebarSectionId)}
           setActiveInspectorTab={setActiveInspectorTab}
           setInspectorOpen={setInspectorOpen}
           setIsOpen={setRightSidebarOpen}
@@ -188,7 +218,10 @@ function RightSidebar({
   inspectorOpen,
   isOpen,
   onBack,
+  onPreviewSection,
+  onSelectClause,
   onShowSummary,
+  onViewSectionFlow,
   selectedInspector,
   selectedSection,
   setActiveInspectorTab,
@@ -203,7 +236,10 @@ function RightSidebar({
   inspectorOpen: boolean;
   isOpen: boolean;
   onBack: () => void;
+  onPreviewSection: (sectionId: string) => void;
+  onSelectClause: (clauseId: string, sectionId: string) => void;
   onShowSummary: () => void;
+  onViewSectionFlow: (sectionId: string) => void;
   selectedInspector: Parameters<typeof ClauseInspector>[0]["inspector"];
   selectedSection: ReturnType<typeof findContractSection>;
   setActiveInspectorTab: Parameters<typeof ClauseInspector>[0]["onTabChange"];
@@ -230,9 +266,17 @@ function RightSidebar({
   return (
     <aside className="border-t border-border bg-surface/85 px-4 py-5 xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto xl:border-l xl:border-t-0 xl:px-5">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          {view === "summary" ? "Contract context" : "Clause inspector"}
-        </p>
+        <RightSidebarBreadcrumb
+          clauseLabel={clauseSelection?.clause.label}
+          onShowSummary={onShowSummary}
+          onShowSection={() => {
+            if (clauseSelection) {
+              onPreviewSection(clauseSelection.section.id);
+            }
+          }}
+          sectionLabel={selectedSection?.label ?? clauseSelection?.section.label}
+          view={view}
+        />
         <div className="flex items-center gap-2">
           {view === "inspector" ? (
             <>
@@ -262,7 +306,15 @@ function RightSidebar({
       {view === "summary" ? (
         <ContractBrief
           contractType={contractType}
+          onPreviewSection={onPreviewSection}
           selectedSection={selectedSection}
+        />
+      ) : null}
+      {view === "section" && selectedSection ? (
+        <SectionDetailPanel
+          onSelectClause={onSelectClause}
+          onViewFlow={onViewSectionFlow}
+          section={selectedSection}
         />
       ) : null}
       {view === "clause" && clauseSelection ? (
@@ -294,11 +346,17 @@ function RightSidebar({
 
 function ContractBrief({
   contractType,
+  onPreviewSection,
   selectedSection,
 }: {
   contractType: string;
+  onPreviewSection: (sectionId: string) => void;
   selectedSection: ReturnType<typeof findContractSection>;
 }) {
+  const sortedSections = [...contractOutline].sort(
+    (left, right) => riskRank[right.risk] - riskRank[left.risk],
+  );
+
   return (
     <section className="rounded-md border border-border bg-background/55 p-4">
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
@@ -327,6 +385,100 @@ function ContractBrief({
           </li>
         ))}
       </ul>
+
+      <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Sections by risk
+      </p>
+      <div className="mt-3 grid gap-2">
+        {sortedSections.map((section) => (
+          <button
+            className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface/70 px-3 py-2 text-left transition hover:border-primary/45 hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary"
+            key={section.id}
+            onClick={() => onPreviewSection(section.id)}
+            type="button"
+          >
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium">
+                {section.label}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                {section.count} clauses
+              </span>
+            </span>
+            <Badge className="shrink-0" tone={riskBadgeTone(section.risk)}>
+              {section.risk}
+            </Badge>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SectionDetailPanel({
+  onSelectClause,
+  onViewFlow,
+  section,
+}: {
+  onSelectClause: (clauseId: string, sectionId: string) => void;
+  onViewFlow: (sectionId: string) => void;
+  section: ContractSection;
+}) {
+  return (
+    <section className="rounded-md border border-border bg-background/55 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Section detail
+          </p>
+          <h2 className="mt-3 text-base font-semibold">{section.label}</h2>
+        </div>
+        <Badge tone={riskBadgeTone(section.risk)}>{section.risk} risk</Badge>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+        {section.plainEnglishSummary}
+      </p>
+      <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Hazards
+      </p>
+      <ul className="mt-3 space-y-2">
+        {section.hazards.map((hazard) => (
+          <li className="flex gap-2 text-sm leading-6" key={hazard}>
+            <AlertTriangle
+              aria-hidden="true"
+              className="mt-1 size-4 shrink-0 text-warning"
+            />
+            <span className="text-muted-foreground">{hazard}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-5 rounded-md border border-border bg-surface/80 p-3">
+        <p className="text-sm font-medium">Should you sign?</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          {section.signGuidance}
+        </p>
+      </div>
+      <Button className="mt-5 w-full" onClick={() => onViewFlow(section.id)}>
+        View Flow
+      </Button>
+      <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Clauses
+      </p>
+      <div className="mt-3 grid gap-2">
+        {section.children.map((clause) => (
+          <button
+            className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface/70 px-3 py-2 text-left transition hover:border-primary/45 hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary"
+            key={clause.id}
+            onClick={() => onSelectClause(clause.id, section.id)}
+            type="button"
+          >
+            <span className="truncate text-sm">{clause.label}</span>
+            <Badge className="shrink-0" tone={riskBadgeTone(clause.risk)}>
+              {clause.risk}
+            </Badge>
+          </button>
+        ))}
+      </div>
     </section>
   );
 }
@@ -360,6 +512,65 @@ function ClauseRiskPanel({
         </p>
       </div>
     </section>
+  );
+}
+
+const riskRank: Record<ContractSection["risk"], number> = {
+  High: 3,
+  Low: 1,
+  Medium: 2,
+};
+
+function riskBadgeTone(risk: ContractSection["risk"]) {
+  if (risk === "High") return "danger";
+  if (risk === "Medium") return "warning";
+  return "success";
+}
+
+function RightSidebarBreadcrumb({
+  clauseLabel,
+  onShowSection,
+  onShowSummary,
+  sectionLabel,
+  view,
+}: {
+  clauseLabel?: string;
+  onShowSection: () => void;
+  onShowSummary: () => void;
+  sectionLabel?: string;
+  view: RightSidebarView;
+}) {
+  return (
+    <nav
+      aria-label="Right sidebar navigation"
+      className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+    >
+      <button
+        className="shrink-0 font-medium uppercase tracking-[0.18em] transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary"
+        onClick={onShowSummary}
+        type="button"
+      >
+        Contract
+      </button>
+      {view !== "summary" && sectionLabel ? (
+        <>
+          <ChevronRight aria-hidden="true" className="size-3 shrink-0" />
+          <button
+            className="min-w-0 truncate font-medium transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary"
+            onClick={onShowSection}
+            type="button"
+          >
+            {sectionLabel}
+          </button>
+        </>
+      ) : null}
+      {view === "clause" && clauseLabel ? (
+        <>
+          <ChevronRight aria-hidden="true" className="size-3 shrink-0" />
+          <span className="min-w-0 truncate text-foreground">{clauseLabel}</span>
+        </>
+      ) : null}
+    </nav>
   );
 }
 

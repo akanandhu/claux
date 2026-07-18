@@ -8,9 +8,12 @@ export type ContractClause = {
 export type ContractSection = {
   children: ContractClause[];
   count: number;
+  hazards: string[];
   id: string;
   label: string;
+  plainEnglishSummary: string;
   risk: "Low" | "Medium" | "High";
+  signGuidance: string;
 };
 
 export const contractOutline: ContractSection[] = [
@@ -36,9 +39,17 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 12,
+    hazards: [
+      "A conflicting definition can change obligations throughout the agreement.",
+      "Priority rules may override terms in attached order forms.",
+    ],
     id: "definitions",
     label: "Definitions",
+    plainEnglishSummary:
+      "This section explains how important words and document conflicts should be read. It is low risk, but mistakes here can affect many later clauses.",
     risk: "Low",
+    signGuidance:
+      "Usually acceptable if the key business terms match how both parties actually use them.",
   },
   {
     children: [
@@ -62,9 +73,17 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 17,
+    hazards: [
+      "The service scope may be narrower than the commercial expectation.",
+      "Service-level remedies can become the only practical remedy for downtime.",
+    ],
     id: "services",
     label: "Services",
+    plainEnglishSummary:
+      "This section says what the provider must deliver and how support should work. Review it carefully because unclear scope is where delivery disputes usually start.",
     risk: "Medium",
+    signGuidance:
+      "Sign only if the scope, support, and service levels match the deal you expect.",
   },
   {
     children: [
@@ -118,9 +137,18 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 12,
+    hazards: [
+      "Late payment can add interest and extra commercial pressure.",
+      "Suspension rights may affect business continuity if invoices are disputed.",
+      "Set-off limits can reduce leverage when services are incomplete.",
+    ],
     id: "payment",
     label: "Payment Terms",
+    plainEnglishSummary:
+      "This section controls fees, invoices, tax, refunds, and late-payment consequences. It is high risk because payment defaults can quickly trigger interest or service suspension.",
     risk: "High",
+    signGuidance:
+      "Do not sign until invoice timing, dispute rights, late fees, and suspension triggers are commercially acceptable.",
   },
   {
     children: [
@@ -144,9 +172,17 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 10,
+    hazards: [
+      "License rights may be too narrow for the intended use.",
+      "Ownership language can blur customer materials and provider platform IP.",
+    ],
     id: "ip",
     label: "Intellectual Property",
+    plainEnglishSummary:
+      "This section separates customer materials, provider IP, and usage rights. It is medium risk because an unclear license can limit how the service can be used.",
     risk: "Medium",
+    signGuidance:
+      "Sign only if the license covers your real operating needs and your own materials remain protected.",
   },
   {
     children: [
@@ -170,9 +206,17 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 7,
+    hazards: [
+      "Confidentiality duties may continue after the contract ends.",
+      "Permitted disclosure carve-outs may be broader than expected.",
+    ],
     id: "confidentiality",
     label: "Confidentiality",
+    plainEnglishSummary:
+      "This section protects confidential information and says when disclosure is allowed. It is medium risk, with survival obligations that can continue after termination.",
     risk: "Medium",
+    signGuidance:
+      "Usually signable if the exceptions are narrow and the survival period is acceptable.",
   },
   {
     children: [
@@ -196,9 +240,18 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 11,
+    hazards: [
+      "The liability cap may limit recovery even when losses are meaningful.",
+      "Exclusions and indemnities can shift high-value claims outside normal remedies.",
+      "Service credits may replace stronger financial remedies.",
+    ],
     id: "liability",
     label: "Liability",
+    plainEnglishSummary:
+      "This section decides how much each party can recover if something goes wrong. It is high risk because caps and exclusions can materially reduce available remedies.",
     risk: "High",
+    signGuidance:
+      "Do not sign until the cap, exclusions, indemnities, and uncapped claims match your risk tolerance.",
   },
   {
     children: [
@@ -222,9 +275,17 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 10,
+    hazards: [
+      "Cure periods may delay exit from a failing relationship.",
+      "Post-termination obligations may survive longer than expected.",
+    ],
     id: "termination",
     label: "Termination",
+    plainEnglishSummary:
+      "This section explains how long the contract lasts and how either side can exit. It is medium risk because termination mechanics affect leverage when performance breaks down.",
     risk: "Medium",
+    signGuidance:
+      "Sign only if exit rights, cure periods, and post-termination duties are workable.",
   },
   {
     children: [
@@ -248,9 +309,17 @@ export const contractOutline: ContractSection[] = [
       },
     ],
     count: 12,
+    hazards: [
+      "Assignment restrictions can block business transfers or reorganizations.",
+      "Governing law and notice mechanics can affect enforcement speed.",
+    ],
     id: "general",
     label: "General Provisions",
+    plainEnglishSummary:
+      "This section covers legal mechanics such as notices, assignment, and governing law. It is medium risk because these terms affect enforceability and future flexibility.",
     risk: "Medium",
+    signGuidance:
+      "Sign if operational mechanics are practical and the governing law/forum are acceptable.",
   },
 ];
 
