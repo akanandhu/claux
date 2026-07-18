@@ -5,7 +5,6 @@ import {
   BookOpenText,
   ChevronRight,
   FileText,
-  FileUp,
   Search,
   UserRound,
 } from "lucide-react";
@@ -66,7 +65,11 @@ const contractOutline = [
   },
 ];
 
-export function Sidebar({ analysis, roleLabel }: SidebarProps) {
+export function Sidebar({
+  analysis,
+  contractFileName,
+  reviewerRoleLabel,
+}: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   function toggleSection(label: string) {
@@ -89,11 +92,15 @@ export function Sidebar({ analysis, roleLabel }: SidebarProps) {
         </div>
 
         <div className="mt-7 grid gap-3">
-          <Button className="h-11 w-full" icon={FileUp} variant="primary">
-            Upload contract
-          </Button>
-          <Button className="h-11 w-full text-center" icon={UserRound}>
-            {roleLabel}
+          <div className="flex min-h-11 items-center gap-3 rounded-md border border-primary/35 bg-primary/12 px-3 py-2 text-sm text-foreground">
+            <FileText aria-hidden="true" className="size-4 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <p className="truncate font-medium">{contractFileName}</p>
+              <p className="text-xs text-muted-foreground">Uploaded contract</p>
+            </div>
+          </div>
+          <Button className="h-11 w-full justify-center text-center" icon={UserRound}>
+            {reviewerRoleLabel}
           </Button>
         </div>
 

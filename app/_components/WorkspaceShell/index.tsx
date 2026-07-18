@@ -115,7 +115,11 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
             : "xl:grid-cols-[18rem_minmax(0,1fr)_4rem]"
         }`}
       >
-        <Sidebar analysis={analysis} roleLabel={roleLabels[reviewerRole]} />
+        <Sidebar
+          analysis={analysis}
+          contractFileName={uploadedFileName ?? analysis.contract.fileName}
+          reviewerRoleLabel={roleLabels[reviewerRole]}
+        />
         <section className="flex min-w-0 flex-col">
           <div className="sticky top-0 z-20">
             <TopBar contract={analysis.contract} />
