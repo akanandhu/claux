@@ -1,6 +1,6 @@
 import { Badge } from "@/components/Badge";
+import { ClauseVisualiser } from "../ClauseVisualiser";
 import { metricTone } from "../constants";
-import { GraphPanel } from "../GraphPanel";
 import type { DashboardMainProps } from "./types";
 import DashboardMetrics from "../DashboardMetrics";
 import { DemoMetric } from "../DashboardMetrics/types";
@@ -45,10 +45,8 @@ const dashboardMetrics: DemoMetric[] = [
 ] as const;
 
 export function DashboardMain({
-  analysis,
   onSelectInspector,
   selectedInspector,
-  selectedNodeId,
 }: DashboardMainProps) {
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-5">
@@ -56,11 +54,9 @@ export function DashboardMain({
         dashboardMetrics={dashboardMetrics}
         metricTone={metricTone}
       />
-      <GraphPanel
-        graph={analysis.graph}
+      <ClauseVisualiser
         onSelectInspector={onSelectInspector}
         selectedInspector={selectedInspector}
-        selectedNodeId={selectedNodeId}
       />
       <PlainEnglishExplanation inspector={selectedInspector} />
     </div>
