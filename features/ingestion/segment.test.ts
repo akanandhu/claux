@@ -4,6 +4,7 @@ import test from "node:test";
 import { IngestionError } from "./errors.ts";
 import { extractTxtDocument } from "./extract.ts";
 import { segmentContractClauses } from "./segment.ts";
+import { validateContractLikeText } from "./validation.ts";
 
 test("segmentContractClauses detects numbered clauses and continuations", async () => {
   const file = new File(
@@ -35,6 +36,19 @@ test("segmentContractClauses rejects text without legal clauses", async () => {
   );
   const document = await extractTxtDocument(file);
 
+  assert.throws(
+    () => segmentContractClauses(document),
+    (error) => error instanceof IngestionError && error.code === "no_clauses",
+  );
+});
+
+test("segmentContractClauses rejects contract-like text without usable clauses", async () => {
+  const rawText =
+    "This Agreement is between Party A and Party B. The parties discuss payment, confidentiality, term, governing law, and liability. Customer shall pay invoices under the contract, and the parties may review notices, reports, and schedules during normal business hours.";
+  const file = new File([rawText], "contract-ish.txt", { type: "text/plain" });
+  const document = await extractTxtDocument(file);
+
+  assert.doesNotThrow(() => validateContractLikeText(rawText));
   assert.throws(
     () => segmentContractClauses(document),
     (error) => error instanceof IngestionError && error.code === "no_clauses",

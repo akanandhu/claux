@@ -68,7 +68,24 @@ export function segmentContractClauses(document: ParsedDocument): ContractClause
     );
   }
 
+  validateSegmentedClauseQuality(clauses);
+
   return clauses;
+}
+
+function validateSegmentedClauseQuality(clauses: ContractClause[]) {
+  const meaningfulClauses = clauses.filter((clause) => {
+    const wordCount = clause.normalizedText.split(/\s+/).filter(Boolean).length;
+
+    return wordCount >= 8 && legalVerbPattern.test(clause.normalizedText);
+  });
+
+  if (meaningfulClauses.length < 2) {
+    throw new IngestionError(
+      "This file has contract-like words, but it does not contain enough usable clauses for analysis.",
+      "no_clauses",
+    );
+  }
 }
 
 function collectClauseBlocks(spans: SourceSpan[]) {
