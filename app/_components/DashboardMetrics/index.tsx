@@ -32,7 +32,7 @@ const DashboardMetrics = ({
                 <TooltipTrigger asChild>
                   <button
                     aria-label={`${metric.label}: ${metric.question}`}
-                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition hover:border-primary/45 hover:bg-surface-raised hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary"
+                    className="hidden size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition hover:border-primary/45 hover:bg-surface-raised hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary lg:inline-flex"
                     type="button"
                   >
                     <CircleHelp aria-hidden="true" className="size-3.5" />
