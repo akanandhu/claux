@@ -93,6 +93,7 @@ export type DemoFinding = {
 export type DemoAnalysisFixture = {
   contract: {
     fileName: string;
+    title: string;
     contractType: string;
     reviewingRole: string;
     reviewerConfidence?: number;

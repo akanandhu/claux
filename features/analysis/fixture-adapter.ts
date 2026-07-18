@@ -64,7 +64,8 @@ export function buildLiveAnalysisFixture({
   return {
     contract: {
       fileName: document.fileName,
-      contractType: inferContractType(clauses),
+      title: analysisContractTitle(analysisResult, document),
+      contractType: analysisContractType(analysisResult, clauses),
       reviewingRole: reviewingRoleLabel(analysisResult, reviewerContext),
       reviewerConfidence:
         analysisResult && "inferenceConfidence" in analysisResult
@@ -130,6 +131,28 @@ function analysisSummaries(analysisResult: LiveAnalysisResult | undefined) {
   }
 
   return [];
+}
+
+function analysisContractTitle(
+  analysisResult: LiveAnalysisResult | undefined,
+  document: ParsedDocument,
+) {
+  if (analysisResult && "contractMetadata" in analysisResult) {
+    return analysisResult.contractMetadata.title;
+  }
+
+  return document.fileName.replace(/\.[^.]+$/, "") || document.fileName;
+}
+
+function analysisContractType(
+  analysisResult: LiveAnalysisResult | undefined,
+  clauses: ContractClause[],
+) {
+  if (analysisResult && "contractMetadata" in analysisResult) {
+    return analysisResult.contractMetadata.contractType;
+  }
+
+  return inferContractType(clauses);
 }
 
 function gateExtractionClientSide(

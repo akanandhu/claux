@@ -26,6 +26,7 @@ export function DashboardMain({
       <ClauseVisualiser
         activeClauseId={activeClauseId}
         activeSectionId={activeSectionId}
+        contract={analysis.contract}
         onSelectClause={onSelectClause}
         onSelectSection={onSelectSection}
         outline={outline}

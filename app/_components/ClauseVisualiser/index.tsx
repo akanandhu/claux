@@ -20,6 +20,7 @@ import { clauseFlowEdges, clauseFlowNodes, hierarchyNodes, riskTone } from "./ut
 export function ClauseVisualiser({
   activeClauseId,
   activeSectionId,
+  contract,
   onSelectClause,
   onSelectSection,
   outline,
@@ -62,8 +63,8 @@ export function ClauseVisualiser({
     return hierarchyNodes(
       {
         data: {
-          clauses: "142 clauses",
-          label: "Master Service Agreement",
+          clauses: `${contract.clauseCount} clauses`,
+          label: contract.title,
           risk: "Full contract",
           tone: "neutral",
         },
@@ -83,7 +84,7 @@ export function ClauseVisualiser({
         type: "section",
       })),
     );
-  }, [outline, selectedClause, selectedSection]);
+  }, [contract.clauseCount, contract.title, outline, selectedClause, selectedSection]);
 
   const edges = useMemo<Edge[]>(() => {
     if (selectedClause) {
@@ -106,7 +107,7 @@ export function ClauseVisualiser({
   const visualiserTitle =
     selectedClause?.clause.label ??
     selectedSection?.label ??
-    "Master Service Agreement";
+    contract.title;
 
   return (
     <section className="overflow-hidden rounded-md border border-border bg-surface" id="overview">
