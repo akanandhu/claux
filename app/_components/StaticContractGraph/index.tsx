@@ -30,10 +30,10 @@ export function StaticContractGraph({
   return (
     <div className="border-t border-border">
       <GraphToolbar />
-      <div className="overflow-hidden p-3 sm:p-4">
+      <div className="overflow-hidden p-3">
         <svg
           aria-label="Static contract structure graph"
-          className="min-h-[360px] w-full rounded-md border border-border bg-background"
+          className="min-h-[330px] w-full rounded-md border border-border bg-background"
           preserveAspectRatio="xMidYMid meet"
           role="img"
           viewBox="0 0 790 310"

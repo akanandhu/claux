@@ -1,25 +1,12 @@
-import { Bot, Download, GitBranch, Search, Settings, ShieldCheck } from "lucide-react";
+import { Bot, Download, GitBranch, Search, Settings } from "lucide-react";
 
-import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import type { TopBarProps } from "./types";
 
-export function TopBar({ contract }: TopBarProps) {
+export function TopBar({}: TopBarProps) {
   return (
-    <header className="border-b border-border bg-background/95 px-4 py-4 lg:px-6">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/95 px-4 py-4 backdrop-blur lg:px-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-medium">{contract.fileName}</p>
-            <Badge tone="success">
-              <ShieldCheck aria-hidden="true" className="size-3.5" />
-              Analysis complete
-            </Badge>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {contract.contractType} for {contract.reviewingRole.toLowerCase()} review
-          </p>
-        </div>
 
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <label className="relative min-w-0 sm:w-72">

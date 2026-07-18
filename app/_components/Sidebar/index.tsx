@@ -1,14 +1,30 @@
-import { Clock3, FileText, RefreshCw } from "lucide-react";
+"use client";
+
+import {
+  BookOpenText,
+  ChevronRight,
+  FileText,
+  Search,
+  UserRound,
+} from "lucide-react";
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
-import { formatDateTime } from "../format";
+import { contractOutline } from "../contractOutline";
 import type { SidebarProps } from "./types";
 
-export function Sidebar({ analysis }: SidebarProps) {
+export function Sidebar({
+  activeClauseId,
+  activeSectionId,
+  analysis,
+  contractFileName,
+  onSelectClause,
+  onSelectSection,
+  reviewerRoleLabel,
+}: SidebarProps) {
   return (
-    <aside className="border-b border-border bg-surface/85 px-4 py-4 xl:border-b-0 xl:border-r xl:px-5 xl:py-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 xl:block">
+    <aside className="flex max-h-screen flex-col border-b border-border bg-surface/85 px-4 py-4 xl:sticky xl:top-0 xl:h-screen xl:border-b-0 xl:border-r xl:px-5 xl:py-6">
+      <div className="shrink-0">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-md border border-primary/40 bg-primary/15 text-primary">
             <FileText aria-hidden="true" className="size-5" />
@@ -20,64 +36,125 @@ export function Sidebar({ analysis }: SidebarProps) {
             </p>
           </div>
         </div>
-        <Button
-          className="text-xs text-foreground hover:text-white xl:mt-6 xl:w-full"
-          icon={RefreshCw}
-        >
-          Replace document
-        </Button>
+
+        <div className="mt-7 grid gap-3">
+          <div className="flex min-h-11 min-w-0 items-center gap-3 overflow-hidden rounded-md border border-primary/35 bg-primary/12 px-3 py-2 text-sm text-foreground">
+            <FileText aria-hidden="true" className="size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="max-w-full truncate font-medium" title={contractFileName}>
+                {contractFileName}
+              </p>
+              <p className="text-xs text-muted-foreground">Uploaded contract</p>
+            </div>
+          </div>
+          <Button className="h-11 w-full justify-center text-center" icon={UserRound}>
+            {reviewerRoleLabel}
+          </Button>
+        </div>
+
+        <div className="mt-7">
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Contract outline
+          </p>
+          <label className="relative mt-3 block">
+            <span className="sr-only">Search outline</span>
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              className="h-10 w-full rounded-md border border-border bg-background/55 py-2 pl-9 pr-3 text-xs text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/25"
+              placeholder="Search outline..."
+              type="search"
+            />
+          </label>
+        </div>
       </div>
 
-      <div className="mt-5 rounded-md border border-border bg-background/55 p-4">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          Primary contract
-        </p>
-        <h2 className="mt-2 text-sm font-medium leading-5">
-          {analysis.contract.fileName}
-        </h2>
-        <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-          <Meta label="Type" value={analysis.contract.contractType} />
-          <Meta label="Role" value={analysis.contract.reviewingRole} />
-          <Meta label="Pages" value={analysis.contract.pageCount} />
-          <Meta label="Clauses" value={analysis.contract.clauseCount} />
-        </dl>
-      </div>
-
-      <nav aria-label="Workspace navigation" className="mt-5">
-        <ul className="grid gap-1 sm:grid-cols-2 xl:grid-cols-1">
-          {analysis.navItems.map((item) => (
-            <li key={item.id}>
-              <a
-                className="flex h-10 items-center justify-between rounded-md px-3 text-sm text-muted-foreground transition hover:bg-surface-raised hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                href={`#${item.id}`}
+      <nav
+        aria-label="Contract outline"
+        className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+      >
+        <ul className="space-y-1 pb-4">
+          {contractOutline.map((item, index) => (
+            <li key={item.label}>
+              <button
+                aria-expanded={activeSectionId === item.id}
+                className={`flex h-10 w-full items-center justify-between rounded-md px-2.5 text-sm transition focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary ${
+                  activeSectionId === item.id
+                    ? "font-medium text-primary"
+                    : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
+                }`}
+                onClick={() => onSelectSection(item.id)}
+                type="button"
               >
-                <span>{item.label}</span>
-                <Badge>{item.count}</Badge>
-              </a>
+                <span className="flex min-w-0 items-center gap-2">
+                  <ChevronRight
+                    aria-hidden="true"
+                    className={`size-3.5 shrink-0 transition ${
+                      activeSectionId === item.id ? "rotate-90" : ""
+                    }`}
+                  />
+                  <BookOpenText aria-hidden="true" className="size-3.5 shrink-0" />
+                  <span className="truncate">
+                    {index + 1}. {item.label}
+                  </span>
+                </span>
+                <Badge className="shrink-0 text-[11px]">{item.count}</Badge>
+              </button>
+              {activeSectionId === item.id ? (
+                <ul className="ml-4 mt-1 space-y-1 border-l border-border/70 pl-4">
+                  {item.children.map((child) => (
+                    <li key={child.id}>
+                      <button
+                        className={`flex h-9 w-full min-w-0 items-center justify-between rounded-md px-2 text-xs ${
+                          activeClauseId === child.id
+                            ? "bg-primary/15 font-medium text-primary"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        onClick={() => onSelectClause(child.id, item.id)}
+                        type="button"
+                      >
+                        <span className="truncate">{child.label}</span>
+                        {child.risk === "High" ? (
+                          <span
+                            aria-hidden="true"
+                            className="size-1.5 rounded-full bg-danger"
+                          />
+                        ) : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </li>
           ))}
         </ul>
       </nav>
 
-      <footer className="mt-5 rounded-md border border-border bg-background/55 p-4 text-xs text-muted-foreground xl:mt-auto">
-        <div className="flex items-center gap-2 text-foreground">
-          <Clock3 aria-hidden="true" className="size-4 text-primary" />
-          Analysis metadata
-        </div>
-        <p className="mt-2">
-          Completed {formatDateTime(analysis.contract.analysisCompletedAt)}
-        </p>
-        <p className="mt-1">Static reviewed fixture, browser-local demo.</p>
+      <footer className="mt-4 shrink-0 rounded-md border border-border bg-background/55 p-4 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground">Contract overview</p>
+        <dl className="mt-4 grid grid-cols-3 gap-3">
+          <OverviewMetric label="Clauses" value={analysis.contract.clauseCount} />
+          <OverviewMetric
+            label="Obligations"
+            value={analysis.navItems.find((item) => item.id === "obligations")?.count ?? 0}
+          />
+          <OverviewMetric
+            label="Risks"
+            value={analysis.navItems.find((item) => item.id === "risks")?.count ?? 0}
+          />
+        </dl>
       </footer>
     </aside>
   );
 }
 
-function Meta({ label, value }: { label: string; value: number | string }) {
+function OverviewMetric({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-foreground">{value}</dd>
+      <dt>{label}</dt>
+      <dd className="mt-1 text-base font-semibold text-foreground">{value}</dd>
     </div>
   );
 }

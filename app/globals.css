@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
 
 :root {
   --background: #0b1220;
@@ -57,4 +58,18 @@ button:disabled {
 
 * {
   scrollbar-color: var(--border) var(--background);
+}
+
+.clause-flow-controls .react-flow__controls-button {
+  background: var(--surface);
+  border-bottom-color: var(--border);
+  color: var(--foreground);
+}
+
+.clause-flow-controls .react-flow__controls-button:hover {
+  background: var(--surface-raised);
+}
+
+.clause-flow-controls .react-flow__controls-button svg {
+  fill: currentColor;
 }
