@@ -10,7 +10,6 @@ import {
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
-import { contractOutline } from "../contractOutline";
 import type { SidebarProps } from "./types";
 
 export function Sidebar({
@@ -20,6 +19,7 @@ export function Sidebar({
   contractFileName,
   onSelectClause,
   onSelectSection,
+  outline,
   reviewerRoleLabel,
 }: SidebarProps) {
   return (
@@ -76,7 +76,7 @@ export function Sidebar({
         className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
       >
         <ul className="space-y-1 pb-4">
-          {contractOutline.map((item, index) => (
+          {outline.map((item, index) => (
             <li key={item.label}>
               <button
                 aria-expanded={activeSectionId === item.id}

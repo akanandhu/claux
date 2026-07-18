@@ -43,6 +43,7 @@ const contractTakeaways = [
 ];
 
 export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
+  const outline = analysis.outline ?? contractOutline;
   const [reviewerRole, setReviewerRole] = useState<ReviewerRole>("received");
   const [workspaceReady, setWorkspaceReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -157,6 +158,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           contractFileName={uploadedFileName ?? analysis.contract.fileName}
           onSelectClause={handleSelectClause}
           onSelectSection={handleSelectSection}
+          outline={outline}
           reviewerRoleLabel={roleLabels[reviewerRole]}
         />
         <section className="flex min-w-0 flex-col">
@@ -169,6 +171,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
             analysis={analysis}
             onSelectClause={handleSelectClause}
             onSelectSection={handleSelectSection}
+            outline={outline}
             selectedInspector={selectedInspector}
             selectedNodeId={selectedNodeId}
           />
@@ -176,7 +179,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
         <RightSidebar
           activeInspectorTab={activeInspectorTab}
           canGoBack={inspectorHistory.length > 0}
-          clauseSelection={findContractClause(activeClauseId)}
+          clauseSelection={findContractClause(activeClauseId, outline)}
           contractType={analysis.contract.contractType}
           inspectorOpen={inspectorOpen}
           isOpen={rightSidebarOpen}
@@ -185,8 +188,9 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           onSelectClause={handleSelectClause}
           onShowSummary={showContractSummary}
           onViewSectionFlow={viewSectionFlow}
+          outline={outline}
           selectedInspector={selectedInspector}
-          selectedSection={findContractSection(rightSidebarSectionId)}
+          selectedSection={findContractSection(rightSidebarSectionId, outline)}
           setActiveInspectorTab={setActiveInspectorTab}
           setInspectorOpen={setInspectorOpen}
           setIsOpen={setRightSidebarOpen}
@@ -209,6 +213,7 @@ function RightSidebar({
   onSelectClause,
   onShowSummary,
   onViewSectionFlow,
+  outline,
   selectedInspector,
   selectedSection,
   setActiveInspectorTab,
@@ -227,6 +232,7 @@ function RightSidebar({
   onSelectClause: (clauseId: string, sectionId: string) => void;
   onShowSummary: () => void;
   onViewSectionFlow: (sectionId: string) => void;
+  outline: ContractSection[];
   selectedInspector: Parameters<typeof ClauseInspector>[0]["inspector"];
   selectedSection: ReturnType<typeof findContractSection>;
   setActiveInspectorTab: Parameters<typeof ClauseInspector>[0]["onTabChange"];
@@ -294,6 +300,7 @@ function RightSidebar({
         <ContractBrief
           contractType={contractType}
           onPreviewSection={onPreviewSection}
+          outline={outline}
           selectedSection={selectedSection}
         />
       ) : null}
@@ -334,13 +341,15 @@ function RightSidebar({
 function ContractBrief({
   contractType,
   onPreviewSection,
+  outline,
   selectedSection,
 }: {
   contractType: string;
   onPreviewSection: (sectionId: string) => void;
+  outline: ContractSection[];
   selectedSection: ReturnType<typeof findContractSection>;
 }) {
-  const sortedSections = [...contractOutline].sort(
+  const sortedSections = [...outline].sort(
     (left, right) => riskRank[right.risk] - riskRank[left.risk],
   );
 

@@ -21,11 +21,7 @@ import {
 import { useMemo } from "react";
 
 import { Badge } from "@/components/Badge";
-import {
-  contractOutline,
-  findContractClause,
-  findContractSection,
-} from "../contractOutline";
+import { findContractClause, findContractSection } from "../contractOutline";
 import {
   branchBottomY,
   branchGap,
@@ -59,9 +55,10 @@ export function ClauseVisualiser({
   activeSectionId,
   onSelectClause,
   onSelectSection,
+  outline,
 }: ClauseVisualiserProps) {
-  const selectedSection = findContractSection(activeSectionId);
-  const selectedClause = findContractClause(activeClauseId);
+  const selectedSection = findContractSection(activeSectionId, outline);
+  const selectedClause = findContractClause(activeClauseId, outline);
 
   const nodes = useMemo<Node<FlowNodeData>[]>(() => {
     if (selectedClause) {
@@ -107,7 +104,7 @@ export function ClauseVisualiser({
         position: { x: 0, y: 0 },
         type: "section",
       },
-      contractOutline.map((section) => ({
+      outline.map((section) => ({
         data: {
           clauses: `${section.count} clauses`,
           label: section.label,
@@ -119,11 +116,11 @@ export function ClauseVisualiser({
         type: "section",
       })),
     );
-  }, [selectedClause, selectedSection]);
+  }, [outline, selectedClause, selectedSection]);
 
   const edges = useMemo<Edge[]>(() => {
     if (selectedClause) {
-      return clauseFlowEdges(selectedClause.clause.id);
+      return clauseFlowEdges(selectedClause);
     }
 
     if (selectedSection) {
@@ -135,9 +132,9 @@ export function ClauseVisualiser({
 
     return hierarchyEdges(
       "agreement",
-      contractOutline.map((section) => section.id),
+      outline.map((section) => section.id),
     );
-  }, [selectedClause, selectedSection]);
+  }, [outline, selectedClause, selectedSection]);
 
   const visualiserTitle =
     selectedClause?.clause.label ??
@@ -177,8 +174,8 @@ export function ClauseVisualiser({
           nodesDraggable={false}
           nodesFocusable
           onNodeClick={(_, node) => {
-            const section = findContractSection(node.id);
-            const clause = findContractClause(node.id);
+            const section = findContractSection(node.id, outline);
+            const clause = findContractClause(node.id, outline);
 
             if (section) {
               onSelectSection(section.id);
@@ -338,30 +335,34 @@ function clauseFlowNodes(
   ]);
 }
 
-function clauseFlowEdges(clauseId: string): Edge[] {
+function clauseFlowEdges(
+  selection: NonNullable<ReturnType<typeof findContractClause>>,
+): Edge[] {
+  const { clause, section } = selection;
+
   return [
     {
       animated: true,
-      id: `section-${clauseId}`,
+      id: `section-${clause.id}`,
       markerEnd: { type: MarkerType.ArrowClosed },
-      source: findContractClause(clauseId)!.section.id,
-      target: clauseId,
+      source: section.id,
+      target: clause.id,
       type: "smoothstep",
     },
     {
       animated: true,
-      id: `${clauseId}-risk`,
+      id: `${clause.id}-risk`,
       markerEnd: { type: MarkerType.ArrowClosed },
-      source: clauseId,
-      target: `${clauseId}-risk`,
+      source: clause.id,
+      target: `${clause.id}-risk`,
       type: "smoothstep",
     },
     {
       animated: true,
-      id: `${clauseId}-action`,
+      id: `${clause.id}-action`,
       markerEnd: { type: MarkerType.ArrowClosed },
-      source: `${clauseId}-risk`,
-      target: `${clauseId}-action`,
+      source: `${clause.id}-risk`,
+      target: `${clause.id}-action`,
       type: "smoothstep",
     },
   ];

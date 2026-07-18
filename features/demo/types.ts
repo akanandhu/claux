@@ -141,5 +141,24 @@ export type DemoAnalysisFixture = {
   defaultInspectorId: string;
   inspectors: DemoInspector[];
   executiveSummary: string[];
+  outline?: DemoOutlineSection[];
   topFindings: DemoFinding[];
+};
+
+export type DemoOutlineClause = {
+  id: string;
+  label: string;
+  risk: "Low" | "Medium" | "High";
+  summary: string;
+};
+
+export type DemoOutlineSection = {
+  children: DemoOutlineClause[];
+  count: number;
+  hazards: string[];
+  id: string;
+  label: string;
+  plainEnglishSummary: string;
+  risk: "Low" | "Medium" | "High";
+  signGuidance: string;
 };

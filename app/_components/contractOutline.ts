@@ -323,10 +323,13 @@ export const contractOutline: ContractSection[] = [
   },
 ];
 
-export function findContractClause(clauseId: string | null) {
+export function findContractClause(
+  clauseId: string | null,
+  outline: ContractSection[] = contractOutline,
+) {
   if (!clauseId) return undefined;
 
-  for (const section of contractOutline) {
+  for (const section of outline) {
     const clause = section.children.find((item) => item.id === clauseId);
     if (clause) return { clause, section };
   }
@@ -334,7 +337,10 @@ export function findContractClause(clauseId: string | null) {
   return undefined;
 }
 
-export function findContractSection(sectionId: string | null) {
+export function findContractSection(
+  sectionId: string | null,
+  outline: ContractSection[] = contractOutline,
+) {
   if (!sectionId) return undefined;
-  return contractOutline.find((section) => section.id === sectionId);
+  return outline.find((section) => section.id === sectionId);
 }

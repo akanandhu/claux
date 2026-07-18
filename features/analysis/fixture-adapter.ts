@@ -6,6 +6,7 @@ import type {
   DemoGraphEdge,
   DemoGraphNode,
   DemoInspector,
+  DemoOutlineSection,
 } from "../demo/types";
 import {
   buildDeterministicExtraction,
@@ -78,6 +79,7 @@ export function buildLiveAnalysisFixture({
       extraction.findings.length,
       reviewerContext,
     ),
+    outline: outlineForClauses(clauses, extraction.findings),
     topFindings: toDemoFindings(extraction.findings, clauses),
   };
 }
@@ -220,6 +222,77 @@ function inferContractType(clauses: ContractClause[]) {
   }
   if (/\blemployment|employee\b/i.test(text)) return "Employment agreement";
   return "Contract";
+}
+
+function outlineForClauses(
+  clauses: ContractClause[],
+  findings: ReturnType<typeof buildDeterministicExtraction>["findings"],
+): DemoOutlineSection[] {
+  const findingByClauseId = new Map(
+    findings.flatMap((finding) =>
+      finding.clauseIds.map((clauseId) => [clauseId, finding] as const),
+    ),
+  );
+  const groups = new Map<string, ContractClause[]>();
+
+  for (const clause of clauses) {
+    const groupKey = clause.number?.split(".")[0] ?? "unclassified";
+    groups.set(groupKey, [...(groups.get(groupKey) ?? []), clause]);
+  }
+
+  return [...groups.entries()].map(([groupKey, groupClauses], index) => {
+    const sectionRisk = highestRisk(
+      groupClauses.map(
+        (clause) => severityToRisk(findingByClauseId.get(clause.id)?.severity),
+      ),
+    );
+    const firstClause = groupClauses[0]!;
+    const hazards = groupClauses
+      .map((clause) => findingByClauseId.get(clause.id)?.title)
+      .filter((title): title is string => Boolean(title));
+
+    return {
+      id: `section-${groupKey}`,
+      label:
+        firstClause.title && groupClauses.length === 1
+          ? firstClause.title
+          : groupKey === "unclassified"
+            ? `Extracted clauses ${index + 1}`
+            : `Section ${groupKey}`,
+      count: groupClauses.length,
+      risk: sectionRisk,
+      plainEnglishSummary: `${groupClauses.length} extracted clause${
+        groupClauses.length === 1 ? "" : "s"
+      } grouped from the source document.`,
+      hazards:
+        hazards.length > 0
+          ? hazards
+          : ["No verified commercial-risk finding was attached to this section."],
+      signGuidance:
+        "Directional signing or sending guidance is only shown after the reviewing party is confirmed.",
+      children: groupClauses.map((clause, clauseIndex) => ({
+        id: clause.id,
+        label:
+          clause.number && clause.title
+            ? `${clause.number} ${clause.title}`
+            : clause.title ?? `Clause ${clauseIndex + 1}`,
+        risk: severityToRisk(findingByClauseId.get(clause.id)?.severity),
+        summary: findingByClauseId.get(clause.id)?.summary ?? clause.text.slice(0, 180),
+      })),
+    };
+  });
+}
+
+function severityToRisk(severity?: string): "Low" | "Medium" | "High" {
+  if (severity === "HIGH" || severity === "CRITICAL") return "High";
+  if (severity === "MEDIUM") return "Medium";
+  return "Low";
+}
+
+function highestRisk(risks: Array<"Low" | "Medium" | "High">) {
+  if (risks.includes("High")) return "High";
+  if (risks.includes("Medium")) return "Medium";
+  return "Low";
 }
 
 function countMatches(clauses: ContractClause[], pattern: RegExp) {

@@ -50,10 +50,11 @@ export function DashboardMain({
   activeSectionId,
   onSelectClause,
   onSelectSection,
+  outline,
   selectedInspector,
 }: DashboardMainProps) {
-  const activeClause = findContractClause(activeClauseId);
-  const activeSection = findContractSection(activeSectionId);
+  const activeClause = findContractClause(activeClauseId, outline);
+  const activeSection = findContractSection(activeSectionId, outline);
 
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-5">
@@ -66,6 +67,7 @@ export function DashboardMain({
         activeSectionId={activeSectionId}
         onSelectClause={onSelectClause}
         onSelectSection={onSelectSection}
+        outline={outline}
       />
       <PlainEnglishExplanation
         inspector={selectedInspector}
