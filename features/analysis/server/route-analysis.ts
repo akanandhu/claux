@@ -18,6 +18,10 @@ import {
 import { buildDeterministicExtraction } from "../deterministic.ts";
 import { validateEvidenceAgainstClauses } from "../evidence.ts";
 import { extractCandidateParties } from "../parties.ts";
+import {
+  analyzeResponseOpenAiSchema,
+  stripNullProperties,
+} from "./openai-schema.ts";
 
 type ResponsesApiPayload = {
   output_text?: string;
@@ -55,7 +59,8 @@ export async function analyzeClauses({
       suggestion.evidenceIds.length > 0 &&
       suggestion.evidenceIds.every(
         (evidenceId) =>
-          evidence.find((item) => item.id === evidenceId)?.validationStatus === "VERIFIED",
+          evidence.find((item) => item.id === evidenceId)?.validationStatus ===
+          "VERIFIED",
       );
 
     return {
@@ -72,7 +77,9 @@ export async function analyzeClauses({
     parties: identifiedParties,
     suggestions,
     ...inference,
-    validationStatus: evidence.every((item) => item.validationStatus === "VERIFIED")
+    validationStatus: evidence.every(
+      (item) => item.validationStatus === "VERIFIED",
+    )
       ? "VERIFIED"
       : "NEEDS_REVIEW",
   });
@@ -103,7 +110,8 @@ function gateFindingsByEvidence(
     const hasOnlyVerifiedEvidence =
       finding.evidenceIds.length > 0 &&
       finding.evidenceIds.every(
-        (evidenceId) => evidenceById.get(evidenceId)?.validationStatus === "VERIFIED",
+        (evidenceId) =>
+          evidenceById.get(evidenceId)?.validationStatus === "VERIFIED",
       );
 
     return {
@@ -122,7 +130,7 @@ async function callAnalyzeModel({
 }) {
   const modelOutput = await callResponsesJson({
     name: "claux_clause_analysis",
-    schema: z.toJSONSchema(analyzeResponseSchema),
+    schema: analyzeResponseOpenAiSchema,
     input: [
       {
         role: "system",
@@ -154,7 +162,7 @@ async function callAnalyzeModel({
     ],
   });
 
-  return analyzeResponseSchema.parse(modelOutput);
+  return analyzeResponseSchema.parse(stripNullProperties(modelOutput));
 }
 
 function deterministicSingleCallAnalysis({
@@ -172,7 +180,8 @@ function deterministicSingleCallAnalysis({
           relationship: reviewerContext.relationship,
           reviewingPartyId: inference.inferredReviewingParty.id,
           reviewingPartyName:
-            inference.inferredReviewingParty.role ?? inference.inferredReviewingParty.name,
+            inference.inferredReviewingParty.role ??
+            inference.inferredReviewingParty.name,
           status: "confirmed",
         }
       : {
@@ -181,7 +190,10 @@ function deterministicSingleCallAnalysis({
             ? "requires_confirmation"
             : "unresolved",
         };
-  const extraction = buildDeterministicExtraction(clauses, effectiveReviewerContext);
+  const extraction = buildDeterministicExtraction(
+    clauses,
+    effectiveReviewerContext,
+  );
   const deepPartyName =
     inference.inferredReviewingParty?.role ??
     inference.inferredReviewingParty?.name ??
@@ -200,7 +212,9 @@ function deterministicSingleCallAnalysis({
         role: party.role,
         summary:
           "Counterparty role identified from source text; full directional analysis was not run for this party.",
-        keyConcerns: ["Use the full-analysis action before relying on this party view."],
+        keyConcerns: [
+          "Use the full-analysis action before relying on this party view.",
+        ],
         confidence: party.confidence,
       })),
     deepAnalysisForParty: {
@@ -330,7 +344,9 @@ function inferReviewingParty(
     inferredReviewingParty: inferred,
     inferenceConfidence: inferred.confidence,
     requiresClarification,
-    reviewerResolution: requiresClarification ? "requires_confirmation" : "resolved",
+    reviewerResolution: requiresClarification
+      ? "requires_confirmation"
+      : "resolved",
   };
 }
 
@@ -357,8 +373,7 @@ function inferReceivedParty(parties: Party[]) {
       "Receiving Party",
       "Borrower",
       "Guarantor",
-    ]) ??
-    (parties.length > 1 ? parties[1] : parties[0])
+    ]) ?? (parties.length > 1 ? parties[1] : parties[0])
   );
 }
 
@@ -426,10 +441,20 @@ async function callResponsesJson({
   });
 
   if (!response.ok) {
-    throw new Error("OpenAI analysis request failed.");
+    const errorBody = await response.text().catch(() => "");
+    throw new Error(
+      [
+        `OpenAI analysis request failed (${response.status}).`,
+        errorBody.slice(0, 600),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
   }
 
-  return JSON.parse(extractResponsesText((await response.json()) as ResponsesApiPayload));
+  return JSON.parse(
+    extractResponsesText((await response.json()) as ResponsesApiPayload),
+  );
 }
 
 function extractResponsesText(payload: ResponsesApiPayload) {
