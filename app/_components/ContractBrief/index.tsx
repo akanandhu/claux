@@ -1,25 +1,31 @@
 import { AlertTriangle } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
+import type { DemoAnalysisFixture } from "@/features/demo/types";
 import type { ContractSection } from "@/features/demo/fixture/outline";
 import type { findContractSection } from "@/features/demo/utils";
-import { contractTakeaways } from "../ClauseInspectionBar/constants";
 import { riskBadgeTone, riskRank } from "../ClauseInspectionBar/utils";
+import { severityTone } from "../constants";
 
 export function ContractBrief({
+  contractSummary,
   contractType,
   onPreviewSection,
   outline,
   selectedSection,
+  topFindings,
 }: {
+  contractSummary: DemoAnalysisFixture["executiveSummary"];
   contractType: string;
   onPreviewSection: (sectionId: string) => void;
   outline: ContractSection[];
   selectedSection: ReturnType<typeof findContractSection>;
+  topFindings: DemoAnalysisFixture["topFindings"];
 }) {
   const sortedSections = [...outline].sort(
     (left, right) => riskRank[right.risk] - riskRank[left.risk],
   );
+  const clauseCount = outline.reduce((total, section) => total + section.count, 0);
 
   return (
     <section className="rounded-md border border-border bg-background/55 p-4">
@@ -29,26 +35,55 @@ export function ContractBrief({
       <p className="mt-3 text-sm font-medium leading-6">
         {selectedSection
           ? `${selectedSection.label} carries ${selectedSection.risk.toLowerCase()} risk and includes ${selectedSection.count} clauses that should be reviewed together.`
-          : `This ${contractType.toLowerCase()} mainly governs software services, payments, confidentiality, and termination.`}
+          : `This ${contractType.toLowerCase()} has ${outline.length} detected sections and ${clauseCount} detected clauses.`}
       </p>
 
       <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Things you should know
+        {selectedSection ? "Things you should know" : "Executive summary"}
       </p>
       <ul className="mt-3 grid gap-2">
-        {contractTakeaways.map((takeaway) => (
+        {(selectedSection ? selectedSection.hazards : contractSummary).map((item) => (
           <li
             className="flex items-start gap-2 rounded-md border border-warning/25 bg-warning/10 px-3 py-2 text-sm leading-5"
-            key={takeaway}
+            key={item}
           >
             <AlertTriangle
               aria-hidden="true"
               className="mt-0.5 size-4 shrink-0 text-warning"
             />
-            <span>{takeaway}</span>
+            <span>{item}</span>
           </li>
         ))}
       </ul>
+
+      {!selectedSection && topFindings.length > 0 ? (
+        <>
+          <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Review priorities
+          </p>
+          <div className="mt-3 grid gap-2">
+            {topFindings.slice(0, 4).map((finding) => (
+              <article
+                className="rounded-md border border-border bg-surface/70 px-3 py-2"
+                key={finding.id}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-medium leading-5">{finding.title}</p>
+                  <Badge
+                    className="shrink-0"
+                    tone={severityTone[finding.severity]}
+                  >
+                    {finding.severity}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {finding.summary}
+                </p>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
         Sections by risk

@@ -17,6 +17,7 @@ export function ClauseInspectionBar({
   activeInspectorTab,
   canGoBack,
   clauseSelection,
+  contractSummary,
   contractType,
   inspectorOpen,
   isOpen,
@@ -31,6 +32,7 @@ export function ClauseInspectionBar({
   setActiveInspectorTab,
   setInspectorOpen,
   setIsOpen,
+  topFindings,
   view,
 }: ClauseInspectionBarProps) {
   if (!isOpen) {
@@ -91,10 +93,12 @@ export function ClauseInspectionBar({
       </div>
       {view === "summary" ? (
         <ContractBrief
+          contractSummary={contractSummary}
           contractType={contractType}
           onPreviewSection={onPreviewSection}
           outline={outline}
           selectedSection={selectedSection}
+          topFindings={topFindings}
         />
       ) : null}
       {view === "section" && selectedSection ? (

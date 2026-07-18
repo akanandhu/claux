@@ -81,6 +81,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           activeInspectorTab={workspace.clauseInspectionBar.activeInspectorTab}
           canGoBack={workspace.clauseInspectionBar.canGoBack}
           clauseSelection={workspace.clauseInspectionBar.clauseSelection}
+          contractSummary={workspace.activeAnalysis.executiveSummary}
           contractType={workspace.activeAnalysis.contract.contractType}
           inspectorOpen={workspace.clauseInspectionBar.inspectorOpen}
           isOpen={workspace.clauseInspectionBar.isOpen}
@@ -95,6 +96,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           setActiveInspectorTab={workspace.clauseInspectionBar.setActiveInspectorTab}
           setInspectorOpen={workspace.clauseInspectionBar.setInspectorOpen}
           setIsOpen={workspace.clauseInspectionBar.setIsOpen}
+          topFindings={workspace.activeAnalysis.topFindings}
           view={workspace.clauseInspectionBar.view}
         />
       </div>
