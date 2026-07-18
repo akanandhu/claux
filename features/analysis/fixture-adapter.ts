@@ -8,8 +8,6 @@ import type { ContractClause } from "../../schemas/contract.ts";
 import type {
   DemoAnalysisFixture,
   DemoEvidence,
-  DemoGraphEdge,
-  DemoGraphNode,
   DemoInspector,
   DemoOutlineSection,
 } from "../demo/types";
@@ -82,7 +80,6 @@ export function buildLiveAnalysisFixture({
       { id: "evidence", label: "Evidence links", count: extraction.evidence.length },
     ],
     metrics,
-    graph: graphForClauses(clauses, extraction.findings),
     defaultInspectorId: inspectors[0]?.id ?? "contract-summary",
     inspectors:
       inspectors.length > 0 ? inspectors : [emptyInspector(document.fileName)],
@@ -178,56 +175,6 @@ function inspectorForClause({
       },
     ],
   };
-}
-
-function graphForClauses(
-  clauses: ContractClause[],
-  findings: ReturnType<typeof buildDeterministicExtraction>["findings"],
-) {
-  const nodes: DemoGraphNode[] = [
-    { id: "contract", label: "Contract", type: "CONTRACT", x: 80, y: 120, size: 52 },
-    ...clauses.slice(0, 8).map((clause, index) => ({
-      id: clause.id,
-      label: clause.number ? `${clause.number} ${clause.title ?? "Clause"}` : clause.title ?? `Clause ${index + 1}`,
-      type: "CLAUSE" as const,
-      x: 250 + (index % 4) * 150,
-      y: 60 + Math.floor(index / 4) * 130,
-      size: 42,
-      inspectorId: `inspector-${clause.id}`,
-    })),
-    ...findings.slice(0, 4).map((finding, index) => ({
-      id: finding.id,
-      label: finding.title,
-      type: "FINDING" as const,
-      x: 860,
-      y: 70 + index * 110,
-      size: 44,
-    })),
-  ];
-  const edges: DemoGraphEdge[] = clauses.slice(0, 8).map((clause) => ({
-    id: `contract-${clause.id}`,
-    source: "contract",
-    target: clause.id,
-    type: "CONTAINS",
-    confidence: 0.9,
-    pathType: "dependency",
-  }));
-
-  for (const finding of findings.slice(0, 4)) {
-    const clauseId = finding.clauseIds[0];
-    if (!clauseId) continue;
-    edges.push({
-      id: `${clauseId}-${finding.id}`,
-      source: clauseId,
-      target: finding.id,
-      type: "SUPPORTED_BY",
-      confidence: finding.confidence,
-      pathType: finding.severity === "HIGH" ? "risk" : "reference",
-      dashed: finding.validationStatus !== "VERIFIED",
-    });
-  }
-
-  return { nodes, edges };
 }
 
 function emptyInspector(fileName: string): DemoInspector {
