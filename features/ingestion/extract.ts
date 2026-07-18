@@ -12,6 +12,29 @@ type TextItem = {
   str?: string;
 };
 
+type PdfPage = {
+  getTextContent: () => Promise<{ items: TextItem[] }>;
+};
+
+type PdfDocument = {
+  numPages: number;
+  getPage: (pageNumber: number) => Promise<PdfPage>;
+};
+
+type PdfJsModule = {
+  GlobalWorkerOptions?: {
+    workerSrc: string;
+  };
+  getDocument: (input: {
+    data: Uint8Array<ArrayBuffer>;
+    useWorkerFetch: false;
+  }) => {
+    promise: Promise<PdfDocument>;
+  };
+};
+
+type PdfJsLoader = () => Promise<PdfJsModule>;
+
 type MammothBrowserModule = {
   default?: {
     extractRawText: (input: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
@@ -88,8 +111,17 @@ export async function extractPdfDocument(
   file: File,
   fileType: SupportedFileType = "pdf",
 ): Promise<ParsedDocument> {
+  return extractPdfDocumentWithLoader(file, fileType, loadPdfJs);
+}
+
+export async function extractPdfDocumentWithLoader(
+  file: File,
+  fileType: SupportedFileType,
+  loadPdfJs: PdfJsLoader,
+): Promise<ParsedDocument> {
   try {
-    const pdfjs = await import("pdfjs-dist");
+    const pdfjs = await loadPdfJs();
+    configurePdfWorker(pdfjs);
     const data = new Uint8Array(await file.arrayBuffer());
     const loadingTask = pdfjs.getDocument({
       data,
@@ -126,18 +158,43 @@ export async function extractPdfDocument(
   } catch (error) {
     if (error instanceof IngestionError) throw error;
 
-    const message =
-      error instanceof Error ? `${error.name} ${error.message}`.toLowerCase() : "";
-
-    if (message.includes("password") || message.includes("encrypted")) {
+    if (isEncryptedPdfError(error)) {
       throw new IngestionError(
         "Encrypted or password-protected PDFs are not supported in this MVP.",
         "encrypted_pdf",
       );
     }
 
-    throw new IngestionError("The PDF could not be read.", "corrupt_file");
+    throw new IngestionError(
+      "The PDF could not be read. It may be corrupt or use unsupported PDF features.",
+      "corrupt_file",
+    );
   }
+}
+
+async function loadPdfJs(): Promise<PdfJsModule> {
+  return (await import("pdfjs-dist")) as PdfJsModule;
+}
+
+function configurePdfWorker(pdfjs: PdfJsModule) {
+  if (!pdfjs.GlobalWorkerOptions) return;
+
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.mjs",
+    import.meta.url,
+  ).toString();
+}
+
+function isEncryptedPdfError(error: unknown) {
+  const message =
+    error instanceof Error ? `${error.name} ${error.message}`.toLowerCase() : "";
+
+  return (
+    message.includes("password") ||
+    message.includes("encrypted") ||
+    message.includes("needpassword") ||
+    message.includes("incorrectpassword")
+  );
 }
 
 function buildParsedDocument({
