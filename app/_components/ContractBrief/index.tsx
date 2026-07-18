@@ -6,6 +6,7 @@ import type { ContractSection } from "@/features/demo/fixture/outline";
 import type { findContractSection } from "@/features/demo/utils";
 import { riskBadgeTone, riskRank } from "../ClauseInspectionBar/utils";
 import { severityTone } from "../constants";
+import { formatLabel } from "../utils";
 
 export function ContractBrief({
   contractSummary,
@@ -79,6 +80,24 @@ export function ContractBrief({
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
                   {finding.summary}
                 </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Badge
+                    tone={
+                      finding.validationStatus === "VERIFIED"
+                        ? "success"
+                        : "warning"
+                    }
+                  >
+                    {finding.validationStatus === "VERIFIED"
+                      ? "Evidence verified"
+                      : formatLabel(finding.validationStatus)}
+                  </Badge>
+                  {finding.clauseRefs.length > 0 ? (
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      Source: {finding.clauseRefs.join(", ")}
+                    </span>
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>

@@ -87,6 +87,7 @@ export type DemoFinding = {
   summary: string;
   clauseRefs: string[];
   confidence: number;
+  validationStatus: DemoEvidence["validationStatus"];
 };
 
 export type DemoAnalysisFixture = {

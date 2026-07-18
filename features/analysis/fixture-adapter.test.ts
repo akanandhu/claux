@@ -87,4 +87,5 @@ test("buildLiveAnalysisFixture downgrades unsupported API evidence client-side",
 
   assert.equal(fixture.inspectors[0]?.evidence[0]?.validationStatus, "NEEDS_REVIEW");
   assert.equal(fixture.topFindings[0]?.summary.includes("recipient"), true);
+  assert.equal(fixture.topFindings[0]?.validationStatus, "NEEDS_REVIEW");
 });
