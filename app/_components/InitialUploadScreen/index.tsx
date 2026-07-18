@@ -33,6 +33,7 @@ export function InitialUploadScreen({
 
     if (file) {
       onUpload(file);
+      event.target.value = "";
     }
   }
 

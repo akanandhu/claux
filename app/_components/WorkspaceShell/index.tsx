@@ -6,6 +6,7 @@ import { InitialUploadScreen } from "../InitialUploadScreen";
 import { PartyConfirmationScreen } from "../PartyConfirmationScreen";
 import { Sidebar } from "../Sidebar";
 import { TopBar } from "../TopBar";
+import { WorkspaceStatusBanner } from "../WorkspaceStatusBanner";
 import { reviewerRoleLabels } from "./constants";
 import type { WorkspaceShellProps } from "./types";
 import { useWorkspaceShellState } from "./useHook";
@@ -66,6 +67,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           <div className="sticky top-0 z-20">
             <TopBar contract={workspace.activeAnalysis.contract} />
           </div>
+          <WorkspaceStatusBanner stage={workspace.job.stage} />
           <DashboardMain
             activeClauseId={workspace.activeClauseId}
             activeSectionId={workspace.activeSectionId}
