@@ -92,7 +92,7 @@ export function InitialUploadScreen({
               </div>
 
               <input
-                accept=".pdf,.docx,.txt"
+                accept=".pdf,.docx,.txt,.rtf,.odt"
                 className="sr-only"
                 disabled={isLoading}
                 onChange={handleFileChange}
