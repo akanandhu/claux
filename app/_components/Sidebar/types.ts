@@ -1,5 +1,5 @@
 import type { DemoAnalysisFixture } from "@/features/demo/types";
-import type { ContractSection } from "../contractOutline";
+import type { ContractSection } from "@/features/demo/fixture/outline";
 
 export type SidebarProps = {
   activeClauseId: string | null;

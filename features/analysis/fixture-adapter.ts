@@ -1,4 +1,9 @@
-import type { ParsedDocument, ReviewerContext } from "../../schemas/contract.ts";
+import type {
+  AiExtractionOutput,
+  InterpretResponse,
+  ParsedDocument,
+  ReviewerContext,
+} from "../../schemas/contract.ts";
 import type { ContractClause } from "../../schemas/contract.ts";
 import type {
   DemoAnalysisFixture,
@@ -13,17 +18,24 @@ import {
   buildMetrics,
   toDemoFindings,
 } from "./deterministic.ts";
+import { validateEvidenceAgainstClauses } from "./evidence.ts";
 
 export function buildLiveAnalysisFixture({
   clauses,
   document,
+  analysisResult,
+  interpretation,
   reviewerContext,
 }: {
   clauses: ContractClause[];
   document: ParsedDocument;
+  analysisResult?: AiExtractionOutput;
+  interpretation?: InterpretResponse;
   reviewerContext: ReviewerContext;
 }): DemoAnalysisFixture {
-  const extraction = buildDeterministicExtraction(clauses, reviewerContext);
+  const extraction = analysisResult
+    ? gateExtractionClientSide(analysisResult, clauses)
+    : buildDeterministicExtraction(clauses, reviewerContext);
   const metrics = buildMetrics({
     clauses,
     evidence: extraction.evidence,
@@ -74,13 +86,37 @@ export function buildLiveAnalysisFixture({
     defaultInspectorId: inspectors[0]?.id ?? "contract-summary",
     inspectors:
       inspectors.length > 0 ? inspectors : [emptyInspector(document.fileName)],
-    executiveSummary: buildExecutiveSummary(
-      clauses.length,
-      extraction.findings.length,
-      reviewerContext,
-    ),
+    executiveSummary:
+      interpretation?.summaries.length
+        ? interpretation.summaries
+        : buildExecutiveSummary(clauses.length, extraction.findings.length, reviewerContext),
     outline: outlineForClauses(clauses, extraction.findings),
     topFindings: toDemoFindings(extraction.findings, clauses),
+  };
+}
+
+function gateExtractionClientSide(
+  extraction: AiExtractionOutput,
+  clauses: ContractClause[],
+): AiExtractionOutput {
+  const evidence = validateEvidenceAgainstClauses(extraction.evidence, clauses);
+  const evidenceById = new Map(evidence.map((item) => [item.id, item]));
+
+  return {
+    ...extraction,
+    evidence,
+    findings: extraction.findings.map((finding) => {
+      const verified =
+        finding.evidenceIds.length > 0 &&
+        finding.evidenceIds.every(
+          (evidenceId) => evidenceById.get(evidenceId)?.validationStatus === "VERIFIED",
+        );
+
+      return {
+        ...finding,
+        validationStatus: verified ? "VERIFIED" : "NEEDS_REVIEW",
+      };
+    }),
   };
 }
 

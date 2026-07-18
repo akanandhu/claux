@@ -1,5 +1,5 @@
 import { Badge } from "@/components/Badge";
-import { formatLabel } from "../format";
+import { formatLabel } from "../utils";
 import type { InspectorEvidenceProps } from "./types";
 
 export function InspectorEvidence({ inspector }: InspectorEvidenceProps) {

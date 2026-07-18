@@ -1,14 +1,8 @@
-export type DemoMetric = {
-  detail: string;
-  id: string;
-  label: string;
-  question: string;
-  tone: string;
-  value: string;
-  tip: string;
-};
+import type { DemoMetric } from "@/features/demo/types";
 
-export type DashboardMetricsPropsI = {
+export type DashboardMetricTone = NonNullable<DemoMetric["tone"]>;
+
+export type DashboardMetricsProps = {
   dashboardMetrics: DemoMetric[];
-  metricTone: Record<DemoMetric["tone"], string>;
+  metricTone: Record<DashboardMetricTone, string>;
 };
