@@ -38,10 +38,12 @@ export function Sidebar({
         </div>
 
         <div className="mt-7 grid gap-3">
-          <div className="flex min-h-11 items-center gap-3 rounded-md border border-primary/35 bg-primary/12 px-3 py-2 text-sm text-foreground">
+          <div className="flex min-h-11 min-w-0 items-center gap-3 overflow-hidden rounded-md border border-primary/35 bg-primary/12 px-3 py-2 text-sm text-foreground">
             <FileText aria-hidden="true" className="size-4 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <p className="truncate font-medium">{contractFileName}</p>
+            <div className="min-w-0 flex-1">
+              <p className="max-w-full truncate font-medium" title={contractFileName}>
+                {contractFileName}
+              </p>
               <p className="text-xs text-muted-foreground">Uploaded contract</p>
             </div>
           </div>
@@ -105,7 +107,7 @@ export function Sidebar({
                   {item.children.map((child) => (
                     <li key={child.id}>
                       <button
-                        className={`flex h-9 items-center justify-between rounded-md px-2 text-xs ${
+                        className={`flex h-9 w-full min-w-0 items-center justify-between rounded-md px-2 text-xs ${
                           activeClauseId === child.id
                             ? "bg-primary/15 font-medium text-primary"
                             : "text-muted-foreground hover:text-foreground"
