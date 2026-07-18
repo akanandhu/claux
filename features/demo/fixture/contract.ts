@@ -9,6 +9,15 @@ export const contract: DemoAnalysisFixture["contract"] = {
   fileName: "Acme Cloud Services Agreement.pdf",
   contractType: "SaaS services agreement",
   reviewingRole: "Customer",
+  reviewerConfidence: 0.82,
+  requiresPartyClarification: false,
+  counterpartyGlance: [
+    {
+      partyName: "Provider",
+      summary: "Counterparty glance only; full directional review is framed for Customer.",
+      confidence: 0.8,
+    },
+  ],
   effectiveDate: "2026-07-01",
   pageCount: 18,
   clauseCount: 42,

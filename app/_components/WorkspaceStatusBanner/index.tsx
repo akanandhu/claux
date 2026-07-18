@@ -17,8 +17,8 @@ export function WorkspaceStatusBanner({ stage }: { stage: JobStage }) {
           className="mt-1 size-4 shrink-0"
         />
         <p>
-          Partial analysis: Claux could not confirm a reviewing party, so
-          directional commercial-risk guidance is withheld.
+          Partial analysis: Claux inferred the reviewing party with limited
+          confidence. Confirm the party before relying on directional guidance.
         </p>
       </div>
     </section>

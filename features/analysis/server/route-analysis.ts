@@ -8,15 +8,16 @@ import type {
   ContractClause,
   Evidence,
   InterpretResponse,
+  Party,
   ReviewerContext,
 } from "../../../schemas/contract.ts";
 import {
-  aiExtractionOutputSchema,
   analyzeResponseSchema,
   interpretResponseSchema,
 } from "../../../schemas/contract.ts";
 import { buildDeterministicExtraction } from "../deterministic.ts";
 import { validateEvidenceAgainstClauses } from "../evidence.ts";
+import { extractCandidateParties } from "../parties.ts";
 
 type ResponsesApiPayload = {
   output_text?: string;
@@ -35,16 +36,42 @@ export async function analyzeClauses({
   clauses: ContractClause[];
   reviewerContext: ReviewerContext;
 }): Promise<AnalyzeResponse> {
-  const extraction =
+  const analysis =
     process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL
       ? await callAnalyzeModel({ clauses, reviewerContext })
-      : buildDeterministicExtraction(clauses, reviewerContext);
-  const evidence = validateEvidenceAgainstClauses(extraction.evidence, clauses);
+      : deterministicSingleCallAnalysis({ clauses, reviewerContext });
+  const evidence = validateEvidenceAgainstClauses(analysis.evidence, clauses);
+  const findings = gateFindingsByEvidence(analysis.findings, evidence);
+  const identifiedParties = analysis.identifiedParties.length
+    ? analysis.identifiedParties
+    : analysis.parties;
+  const inference = normalizeInference({
+    analysis,
+    identifiedParties,
+    reviewerContext,
+  });
+  const suggestions = analysis.suggestions.map((suggestion) => {
+    const verified =
+      suggestion.evidenceIds.length > 0 &&
+      suggestion.evidenceIds.every(
+        (evidenceId) =>
+          evidence.find((item) => item.id === evidenceId)?.validationStatus === "VERIFIED",
+      );
+
+    return {
+      ...suggestion,
+      validationStatus: verified ? "VERIFIED" : "NEEDS_REVIEW",
+    };
+  });
 
   return analyzeResponseSchema.parse({
-    ...extraction,
+    ...analysis,
     evidence,
-    findings: gateFindingsByEvidence(extraction.findings, evidence),
+    findings,
+    identifiedParties,
+    parties: identifiedParties,
+    suggestions,
+    ...inference,
     validationStatus: evidence.every((item) => item.validationStatus === "VERIFIED")
       ? "VERIFIED"
       : "NEEDS_REVIEW",
@@ -95,12 +122,22 @@ async function callAnalyzeModel({
 }) {
   const modelOutput = await callResponsesJson({
     name: "claux_clause_analysis",
-    schema: z.toJSONSchema(aiExtractionOutputSchema),
+    schema: z.toJSONSchema(analyzeResponseSchema),
     input: [
       {
         role: "system",
-        content:
-          "Extract contract parties, source-backed commercial risk findings, and evidence. Use only the supplied clause text. Do not assess legal enforceability.",
+        content: [
+          "You are Claux, a source-grounded contract analysis engine.",
+          "Use only the supplied clause text. Never regenerate or rewrite source clauses.",
+          "Extract all explicit legal parties and infer the single most likely party represented by the user from reviewerContext.relationship.",
+          "If relationship is received, infer the likely recipient/offeree/counterparty side. If relationship is prepared, infer the likely drafter/originator/offeror side.",
+          "Run deep risk, negotiation, and drafting-direction analysis only for the inferred reviewing party.",
+          "Return lightweight counterpartyGlance summaries for other identified parties.",
+          "Set requiresClarification true when the represented party cannot be confidently mapped, especially with three or more plausible parties.",
+          "Every finding and suggestion must cite evidence IDs from the evidence array. Do not make unsupported factual claims.",
+          "Do not assess legal enforceability or jurisdiction-specific legality.",
+          "Suggestions must be drafting directions, not ready-to-use legal language.",
+        ].join(" "),
       },
       {
         role: "user",
@@ -117,7 +154,222 @@ async function callAnalyzeModel({
     ],
   });
 
-  return aiExtractionOutputSchema.parse(modelOutput);
+  return analyzeResponseSchema.parse(modelOutput);
+}
+
+function deterministicSingleCallAnalysis({
+  clauses,
+  reviewerContext,
+}: {
+  clauses: ContractClause[];
+  reviewerContext: ReviewerContext;
+}): AnalyzeResponse {
+  const identifiedParties = extractCandidateParties(clauses);
+  const inference = inferReviewingParty(identifiedParties, reviewerContext);
+  const effectiveReviewerContext: ReviewerContext =
+    inference.inferredReviewingParty && !inference.requiresClarification
+      ? {
+          relationship: reviewerContext.relationship,
+          reviewingPartyId: inference.inferredReviewingParty.id,
+          reviewingPartyName:
+            inference.inferredReviewingParty.role ?? inference.inferredReviewingParty.name,
+          status: "confirmed",
+        }
+      : {
+          relationship: reviewerContext.relationship,
+          status: inference.requiresClarification
+            ? "requires_confirmation"
+            : "unresolved",
+        };
+  const extraction = buildDeterministicExtraction(clauses, effectiveReviewerContext);
+  const deepPartyName =
+    inference.inferredReviewingParty?.role ??
+    inference.inferredReviewingParty?.name ??
+    "the likely reviewing party";
+
+  return analyzeResponseSchema.parse({
+    ...extraction,
+    identifiedParties,
+    parties: identifiedParties,
+    ...inference,
+    counterpartyGlance: identifiedParties
+      .filter((party) => party.id !== inference.inferredReviewingParty?.id)
+      .map((party) => ({
+        partyId: party.id,
+        partyName: party.role ?? party.name,
+        role: party.role,
+        summary:
+          "Counterparty role identified from source text; full directional analysis was not run for this party.",
+        keyConcerns: ["Use the full-analysis action before relying on this party view."],
+        confidence: party.confidence,
+      })),
+    deepAnalysisForParty: {
+      partyId: inference.inferredReviewingParty?.id,
+      partyName: deepPartyName,
+      perspective:
+        reviewerContext.relationship === "prepared" ? "drafter" : "recipient",
+      summary: `Deep analysis is framed for ${deepPartyName}.`,
+      partyImpacts: extraction.findings.map((finding) => ({
+        partyId: inference.inferredReviewingParty?.id,
+        partyName: deepPartyName,
+        affectedParty: finding.affectedParty,
+        benefitingParty: finding.benefitingParty,
+        impact:
+          finding.reviewingPartyImpact ??
+          "Directional impact could not be confidently assigned.",
+        severityAdjustment: "same",
+        confidence: finding.confidence,
+      })),
+    },
+    summaries: extraction.findings.slice(0, 4).map((finding) => {
+      return `${deepPartyName}: ${finding.reviewingPartyImpact ?? finding.summary}`;
+    }),
+    suggestions: extraction.findings
+      .filter((finding) => finding.validationStatus === "VERIFIED")
+      .slice(0, 4)
+      .map((finding) => ({
+        id: `suggestion-${finding.id}`,
+        findingId: finding.id,
+        clauseId: finding.clauseIds[0]!,
+        direction:
+          reviewerContext.relationship === "prepared"
+            ? "Clarify the drafting position, trigger, affected party, and remedy so the term is easier to defend in negotiation."
+            : "Identify the trigger, affected party, and practical remedy to decide what should be redlined.",
+        rationale:
+          "The direction is tied to verified source evidence and is not final legal language.",
+        evidenceIds: finding.evidenceIds,
+        validationStatus: "VERIFIED",
+      })),
+    validationStatus: "VERIFIED",
+  });
+}
+
+function normalizeInference({
+  analysis,
+  identifiedParties,
+  reviewerContext,
+}: {
+  analysis: AnalyzeResponse;
+  identifiedParties: Party[];
+  reviewerContext: ReviewerContext;
+}) {
+  const fallback = inferReviewingParty(identifiedParties, reviewerContext);
+  const inferredReviewingParty =
+    analysis.inferredReviewingParty ?? fallback.inferredReviewingParty;
+  const inferenceConfidence = Math.max(
+    analysis.inferenceConfidence,
+    fallback.inferenceConfidence,
+  );
+  const requiresClarification =
+    analysis.requiresClarification ||
+    fallback.requiresClarification ||
+    inferenceConfidence < 0.72;
+
+  return {
+    inferredReviewingParty,
+    inferenceConfidence,
+    reviewerResolution: requiresClarification
+      ? "requires_confirmation"
+      : inferredReviewingParty
+        ? "resolved"
+        : "unresolved",
+    requiresClarification,
+    candidateReviewingPartyIds:
+      analysis.candidateReviewingPartyIds.length > 0
+        ? analysis.candidateReviewingPartyIds
+        : fallback.candidateReviewingPartyIds,
+  } as const;
+}
+
+function inferReviewingParty(
+  parties: Party[],
+  reviewerContext: ReviewerContext,
+): {
+  candidateReviewingPartyIds: string[];
+  inferredReviewingParty?: Party;
+  inferenceConfidence: number;
+  requiresClarification: boolean;
+  reviewerResolution: "resolved" | "requires_confirmation" | "unresolved";
+} {
+  if (reviewerContext.reviewingPartyId) {
+    const explicitParty = parties.find(
+      (party) => party.id === reviewerContext.reviewingPartyId,
+    );
+
+    if (explicitParty) {
+      return {
+        candidateReviewingPartyIds: [explicitParty.id],
+        inferredReviewingParty: explicitParty,
+        inferenceConfidence: 0.98,
+        requiresClarification: false,
+        reviewerResolution: "resolved",
+      };
+    }
+  }
+
+  const inferred =
+    reviewerContext.relationship === "prepared"
+      ? inferPreparedParty(parties)
+      : inferReceivedParty(parties);
+  const candidateReviewingPartyIds =
+    parties.length > 0 ? parties.map((party) => party.id) : [];
+
+  if (!inferred) {
+    return {
+      candidateReviewingPartyIds,
+      inferenceConfidence: 0,
+      requiresClarification: true,
+      reviewerResolution: "unresolved",
+    };
+  }
+
+  const requiresClarification = parties.length > 2 && inferred.confidence < 0.9;
+
+  return {
+    candidateReviewingPartyIds,
+    inferredReviewingParty: inferred,
+    inferenceConfidence: inferred.confidence,
+    requiresClarification,
+    reviewerResolution: requiresClarification ? "requires_confirmation" : "resolved",
+  };
+}
+
+function inferPreparedParty(parties: Party[]) {
+  return (
+    findPartyByRole(parties, [
+      "Provider",
+      "Supplier",
+      "Vendor",
+      "Company",
+      "Contractor",
+      "Licensor",
+      "Disclosing Party",
+    ]) ?? parties[0]
+  );
+}
+
+function inferReceivedParty(parties: Party[]) {
+  return (
+    findPartyByRole(parties, [
+      "Customer",
+      "Client",
+      "Licensee",
+      "Receiving Party",
+      "Borrower",
+      "Guarantor",
+    ]) ??
+    (parties.length > 1 ? parties[1] : parties[0])
+  );
+}
+
+function findPartyByRole(parties: Party[], roles: string[]) {
+  return parties.find((party) =>
+    roles.some((role) =>
+      [party.role, party.name, ...party.aliases].some(
+        (value) => value?.toLowerCase() === role.toLowerCase(),
+      ),
+    ),
+  );
 }
 
 async function callInterpretModel({

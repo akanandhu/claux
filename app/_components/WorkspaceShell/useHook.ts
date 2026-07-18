@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
 
 import { buildLiveAnalysisFixture } from "@/features/analysis/fixture-adapter";
-import { extractCandidateParties } from "@/features/analysis/parties";
 import type { DemoAnalysisFixture } from "@/features/demo/types";
 import { extractContractDocument } from "@/features/ingestion/extract";
 import { segmentContractClauses } from "@/features/ingestion/segment";
 import type {
   AnalyzeResponse,
   ContractClause,
-  InterpretResponse,
   ParsedDocument,
   ReviewerContext,
 } from "@/schemas/contract";
@@ -115,18 +113,6 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
       setJob((current) => ({ ...current, document, stage: "segmenting" }));
       await yieldToPaint();
       const clauses = segmentContractClauses(document);
-      const parties = extractCandidateParties(clauses);
-
-      if (parties.length > 0) {
-        setJob({
-          clauses,
-          document,
-          error: null,
-          parties,
-          stage: "resolving_role",
-        });
-        return;
-      }
 
       await analyzeLiveContract({
         clauses,
@@ -145,25 +131,6 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
         stage: "failed",
       });
     }
-  }
-
-  async function confirmReviewingParty(partyId: string) {
-    if (!job.document || job.clauses.length === 0) return;
-
-    const party = job.parties.find((candidate) => candidate.id === partyId);
-
-    if (!party) return;
-
-    await analyzeLiveContract({
-      clauses: job.clauses,
-      document: job.document,
-      reviewerContext: {
-        relationship: reviewerRole,
-        reviewingPartyId: party.id,
-        reviewingPartyName: party.role ?? party.name,
-        status: "confirmed",
-      },
-    });
   }
 
   function openDemoWorkspace() {
@@ -256,32 +223,32 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
       setJob((current) => ({ ...current, stage: "verifying" }));
       await yieldToPaint();
 
-      let interpretation: InterpretResponse | undefined;
-      if (reviewerContext.status === "confirmed") {
-        setJob((current) => ({ ...current, stage: "scoring" }));
-        interpretation = await postJson<InterpretResponse>("/api/interpret", {
-          clauses,
-          reviewerContext,
-          findings: analysisResponse.findings,
-          evidence: analysisResponse.evidence,
-        });
-      }
-
       setJob((current) => ({ ...current, stage: "building_view" }));
       setLiveAnalysis(
         buildLiveAnalysisFixture({
           analysisResult: analysisResponse,
           clauses,
           document,
-          interpretation,
-          reviewerContext,
+          reviewerContext: {
+            relationship: reviewerContext.relationship,
+            reviewingPartyId: analysisResponse.inferredReviewingParty?.id,
+            reviewingPartyName:
+              analysisResponse.inferredReviewingParty?.role ??
+              analysisResponse.inferredReviewingParty?.name,
+            status: analysisResponse.inferredReviewingParty
+              ? "confirmed"
+              : analysisResponse.requiresClarification
+                ? "requires_confirmation"
+                : "unresolved",
+          },
         }),
       );
       setWorkspaceReady(true);
       setJob((current) => ({
         ...current,
+        parties: analysisResponse.identifiedParties,
         error: null,
-        stage: reviewerContext.status === "confirmed" ? "completed" : "partial",
+        stage: analysisResponse.requiresClarification ? "partial" : "completed",
       }));
     } catch (error) {
       setWorkspaceReady(false);
@@ -298,7 +265,6 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
     activeAnalysis,
     activeClauseId,
     activeSectionId,
-    confirmReviewingParty,
     handleUpload,
     handleSelectClause,
     handleSelectSection,

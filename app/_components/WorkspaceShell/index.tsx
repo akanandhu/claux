@@ -3,7 +3,6 @@
 import { DashboardMain } from "../DashboardMain";
 import { ClauseInspectionBar } from "../ClauseInspectionBar";
 import { InitialUploadScreen } from "../InitialUploadScreen";
-import { PartyConfirmationScreen } from "../PartyConfirmationScreen";
 import { Sidebar } from "../Sidebar";
 import { TopBar } from "../TopBar";
 import { WorkspaceStatusBanner } from "../WorkspaceStatusBanner";
@@ -15,20 +14,6 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
   const workspace = useWorkspaceShellState(analysis);
 
   if (!workspace.workspaceReady) {
-    if (
-      workspace.job.stage === "resolving_role" &&
-      workspace.job.document
-    ) {
-      return (
-        <PartyConfirmationScreen
-          fileName={workspace.job.document.fileName}
-          onConfirm={workspace.confirmReviewingParty}
-          parties={workspace.job.parties}
-          reviewerRole={workspace.reviewerRole}
-        />
-      );
-    }
-
     return (
       <InitialUploadScreen
         error={workspace.job.error}

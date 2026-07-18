@@ -21,7 +21,6 @@ export function jobStageLabel(stage: JobStage) {
     failed: "Failed",
     idle: "Ready",
     partial: "Partial analysis ready",
-    resolving_role: "Resolving reviewer",
     scoring: "Scoring role-aware risk",
     segmenting: "Detecting clauses",
     validating: "Validating file",

@@ -1,6 +1,6 @@
 import type {
   AiExtractionOutput,
-  InterpretResponse,
+  AnalyzeResponse,
   ParsedDocument,
   ReviewerContext,
 } from "../../schemas/contract.ts";
@@ -18,17 +18,17 @@ import {
 } from "./deterministic.ts";
 import { validateEvidenceAgainstClauses } from "./evidence.ts";
 
+type LiveAnalysisResult = AiExtractionOutput | AnalyzeResponse;
+
 export function buildLiveAnalysisFixture({
   clauses,
   document,
   analysisResult,
-  interpretation,
   reviewerContext,
 }: {
   clauses: ContractClause[];
   document: ParsedDocument;
-  analysisResult?: AiExtractionOutput;
-  interpretation?: InterpretResponse;
+  analysisResult?: LiveAnalysisResult;
   reviewerContext: ReviewerContext;
 }): DemoAnalysisFixture {
   const extraction = analysisResult
@@ -65,7 +65,23 @@ export function buildLiveAnalysisFixture({
     contract: {
       fileName: document.fileName,
       contractType: inferContractType(clauses),
-      reviewingRole: reviewerContext.reviewingPartyName ?? "Unconfirmed reviewer",
+      reviewingRole: reviewingRoleLabel(analysisResult, reviewerContext),
+      reviewerConfidence:
+        analysisResult && "inferenceConfidence" in analysisResult
+          ? analysisResult.inferenceConfidence
+          : undefined,
+      requiresPartyClarification:
+        analysisResult && "requiresClarification" in analysisResult
+          ? analysisResult.requiresClarification
+          : undefined,
+      counterpartyGlance:
+        analysisResult && "counterpartyGlance" in analysisResult
+          ? analysisResult.counterpartyGlance.map((party) => ({
+              partyName: party.partyName,
+              summary: party.summary,
+              confidence: party.confidence,
+            }))
+          : undefined,
       effectiveDate: "Not detected",
       pageCount: document.pageCount ?? document.pages.length,
       clauseCount: clauses.length,
@@ -84,12 +100,36 @@ export function buildLiveAnalysisFixture({
     inspectors:
       inspectors.length > 0 ? inspectors : [emptyInspector(document.fileName)],
     executiveSummary:
-      interpretation?.summaries.length
-        ? interpretation.summaries
+      analysisSummaries(analysisResult).length
+        ? analysisSummaries(analysisResult)
         : buildExecutiveSummary(clauses.length, extraction.findings.length, reviewerContext),
     outline: outlineForClauses(clauses, extraction.findings),
     topFindings: toDemoFindings(extraction.findings, clauses),
   };
+}
+
+function reviewingRoleLabel(
+  analysisResult: LiveAnalysisResult | undefined,
+  reviewerContext: ReviewerContext,
+) {
+  if (analysisResult && "inferredReviewingParty" in analysisResult) {
+    return (
+      analysisResult.inferredReviewingParty?.role ??
+      analysisResult.inferredReviewingParty?.name ??
+      reviewerContext.reviewingPartyName ??
+      "Inferred reviewer"
+    );
+  }
+
+  return reviewerContext.reviewingPartyName ?? "Inferred reviewer";
+}
+
+function analysisSummaries(analysisResult: LiveAnalysisResult | undefined) {
+  if (analysisResult && "summaries" in analysisResult) {
+    return analysisResult.summaries;
+  }
+
+  return [];
 }
 
 function gateExtractionClientSide(

@@ -95,6 +95,13 @@ export type DemoAnalysisFixture = {
     fileName: string;
     contractType: string;
     reviewingRole: string;
+    reviewerConfidence?: number;
+    requiresPartyClarification?: boolean;
+    counterpartyGlance?: Array<{
+      partyName: string;
+      summary: string;
+      confidence: number;
+    }>;
     effectiveDate: string;
     pageCount: number;
     clauseCount: number;
