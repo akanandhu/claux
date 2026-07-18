@@ -1,17 +1,14 @@
 import { AlertTriangle } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
-import { Button } from "@/components/Button";
 import type { ContractSection } from "@/features/demo/fixture/outline";
 import { riskBadgeTone } from "../ClauseInspectionBar/utils";
 
 export function SectionDetailPanel({
   onSelectClause,
-  onViewFlow,
   section,
 }: {
   onSelectClause: (clauseId: string, sectionId: string) => void;
-  onViewFlow: (sectionId: string) => void;
   section: ContractSection;
 }) {
   return (
@@ -48,9 +45,6 @@ export function SectionDetailPanel({
           {section.signGuidance}
         </p>
       </div>
-      <Button className="mt-5 w-full" onClick={() => onViewFlow(section.id)}>
-        View Flow
-      </Button>
       <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
         Clauses
       </p>

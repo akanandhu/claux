@@ -25,7 +25,6 @@ export function ClauseInspectionBar({
   onPreviewSection,
   onSelectClause,
   onShowSummary,
-  onViewSectionFlow,
   outline,
   selectedInspector,
   selectedSection,
@@ -104,7 +103,6 @@ export function ClauseInspectionBar({
       {view === "section" && selectedSection ? (
         <SectionDetailPanel
           onSelectClause={onSelectClause}
-          onViewFlow={onViewSectionFlow}
           section={selectedSection}
         />
       ) : null}

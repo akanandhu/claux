@@ -163,16 +163,9 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
   }
 
   function previewSection(sectionId: string) {
-    setClauseInspectionBarSectionId(sectionId);
-    setActiveClauseId(null);
-    setClauseInspectionBarOpen(true);
-    setClauseInspectionBarView("section");
-  }
-
-  function viewSectionFlow(sectionId: string) {
     setActiveSectionId(sectionId);
-    setActiveClauseId(null);
     setClauseInspectionBarSectionId(sectionId);
+    setActiveClauseId(null);
     setClauseInspectionBarOpen(true);
     setClauseInspectionBarView("section");
   }
@@ -292,7 +285,6 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
     showContractSummary,
     showPreviousInspector,
     uploadedFileName,
-    viewSectionFlow,
     workspaceReady,
   };
 }

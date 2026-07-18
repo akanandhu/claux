@@ -19,7 +19,6 @@ export type ClauseInspectionBarProps = {
   onPreviewSection: (sectionId: string) => void;
   onSelectClause: (clauseId: string, sectionId: string) => void;
   onShowSummary: () => void;
-  onViewSectionFlow: (sectionId: string) => void;
   outline: ContractSection[];
   selectedInspector: Parameters<typeof ClauseInspector>[0]["inspector"];
   selectedSection: ReturnType<typeof findContractSection>;

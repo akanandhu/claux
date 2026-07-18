@@ -76,7 +76,6 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           onPreviewSection={workspace.previewSection}
           onSelectClause={workspace.handleSelectClause}
           onShowSummary={workspace.showContractSummary}
-          onViewSectionFlow={workspace.viewSectionFlow}
           outline={workspace.outline}
           selectedInspector={workspace.clauseInspectionBar.selectedInspector}
           selectedSection={workspace.clauseInspectionBar.selectedSection}
