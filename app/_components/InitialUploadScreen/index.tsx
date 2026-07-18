@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { FileUp, Loader2, UserRound } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { RoleButton } from "../RoleButton";
 import type { JobStage, ReviewerRole } from "../WorkspaceShell/types";
-import { isBusyStage, jobStageLabel } from "./utils";
+import { isBusyStage, jobStageDescription, jobStageLabel } from "./utils";
 
 export function InitialUploadScreen({
   error,
@@ -27,6 +27,7 @@ export function InitialUploadScreen({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = isBusyStage(jobStage);
+  const elapsedSeconds = useElapsedSeconds(isLoading);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -122,6 +123,37 @@ export function InitialUploadScreen({
                     : uploadedFileName}
                 </p>
               ) : null}
+              {isLoading ? (
+                <div
+                  aria-live="polite"
+                  className="mt-4 rounded-md border border-primary/25 bg-primary/10 p-3"
+                  role="status"
+                >
+                  <div className="flex items-start gap-3">
+                    <Loader2
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0 animate-spin text-primary"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">
+                        {jobStageLabel(jobStage)}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {jobStageDescription(jobStage)}
+                      </p>
+                      <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                        Elapsed {elapsedSeconds}s
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${stageProgress(jobStage)}%` }}
+                    />
+                  </div>
+                </div>
+              ) : null}
               {error ? (
                 <p
                   className="mt-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm leading-6 text-danger"
@@ -140,4 +172,48 @@ export function InitialUploadScreen({
       </div>
     </main>
   );
+}
+
+function useElapsedSeconds(active: boolean) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      const resetId = window.setTimeout(() => setElapsedSeconds(0), 0);
+
+      return () => window.clearTimeout(resetId);
+    }
+
+    const startedAt = Date.now();
+    const resetId = window.setTimeout(() => setElapsedSeconds(0), 0);
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(resetId);
+      window.clearInterval(intervalId);
+    };
+  }, [active]);
+
+  return elapsedSeconds;
+}
+
+function stageProgress(stage: JobStage) {
+  const progress: Record<JobStage, number> = {
+    analyzing: 62,
+    building_view: 92,
+    completed: 100,
+    extracting: 20,
+    failed: 100,
+    idle: 0,
+    partial: 100,
+    scoring: 84,
+    segmenting: 38,
+    submitting_analysis: 50,
+    validating: 10,
+    verifying: 76,
+  };
+
+  return progress[stage];
 }

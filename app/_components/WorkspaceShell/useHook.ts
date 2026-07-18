@@ -21,6 +21,8 @@ import type {
 } from "./types";
 import { errorMessage, postJson, yieldToPaint } from "./utils";
 
+const analysisTimeoutMs = 90_000;
+
 export function useWorkspaceSelection(analysis: DemoAnalysisFixture) {
   const [selectedInspectorState, setSelectedInspectorState] = useState({
     analysisDefaultInspectorId: analysis.defaultInspectorId,
@@ -207,11 +209,29 @@ export function useWorkspaceShellState(initialAnalysis: WorkspaceShellProps["ana
         clauses,
         document,
         error: null,
-        stage: "analyzing",
+        stage: "submitting_analysis",
       }));
-      const analysisResponse = await postJson<AnalyzeResponse>("/api/analyze", {
-        clauses,
-        reviewerContext,
+      await yieldToPaint();
+      setJob((current) => ({ ...current, stage: "analyzing" }));
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), analysisTimeoutMs);
+      const analysisResponse = await postJson<AnalyzeResponse>(
+        "/api/analyze",
+        {
+          clauses,
+          reviewerContext,
+        },
+        { signal: controller.signal },
+      ).catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          throw new Error(
+            "Analysis took too long. Your extracted clauses were kept locally; try again with a shorter contract or retry later.",
+          );
+        }
+
+        throw error;
+      }).finally(() => {
+        window.clearTimeout(timeoutId);
       });
       setJob((current) => ({ ...current, stage: "verifying" }));
       await yieldToPaint();

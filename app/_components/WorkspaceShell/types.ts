@@ -18,6 +18,7 @@ export type JobStage =
   | "validating"
   | "extracting"
   | "segmenting"
+  | "submitting_analysis"
   | "analyzing"
   | "verifying"
   | "scoring"
