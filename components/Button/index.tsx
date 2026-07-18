@@ -1,7 +1,7 @@
 import type { ButtonProps } from "./types";
 
 const baseClass =
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary disabled:opacity-50";
 
 const variantClass = {
   primary: "bg-primary text-white hover:bg-primary/90",

@@ -81,7 +81,7 @@ export function Sidebar({ analysis, roleLabel }: SidebarProps) {
           {contractOutline.map((item, index) => (
             <li key={item.label}>
               <a
-                className={`flex h-9 items-center justify-between rounded-md px-2.5 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+                className={`flex h-9 items-center justify-between rounded-md px-2.5 text-sm transition focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary ${
                   item.label === "Payment Terms"
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"

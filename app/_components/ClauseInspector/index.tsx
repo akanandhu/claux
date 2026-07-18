@@ -70,7 +70,7 @@ function TabButton({
   return (
     <button
       aria-selected={active}
-      className={`h-9 border-b-2 px-2 text-xs font-medium capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+      className={`h-9 border-b-2 px-2 text-xs font-medium capitalize transition focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary ${
         active
           ? "border-primary text-primary"
           : "border-transparent text-muted-foreground hover:text-foreground"
