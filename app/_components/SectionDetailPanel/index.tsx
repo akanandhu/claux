@@ -13,14 +13,21 @@ export function SectionDetailPanel({
 }) {
   return (
     <section className="rounded-md border border-border bg-background/55 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
             Section detail
           </p>
-          <h2 className="mt-3 text-base font-semibold">{section.label}</h2>
+          <h2 className="mt-3 text-base font-semibold leading-6 [overflow-wrap:anywhere]">
+            {section.label}
+          </h2>
         </div>
-        <Badge tone={riskBadgeTone(section.risk)}>{section.risk} risk</Badge>
+        <Badge
+          className="justify-self-end whitespace-nowrap"
+          tone={riskBadgeTone(section.risk)}
+        >
+          {section.risk} risk
+        </Badge>
       </div>
       <p className="mt-4 text-sm leading-6 text-muted-foreground">
         {section.plainEnglishSummary}
@@ -51,13 +58,18 @@ export function SectionDetailPanel({
       <div className="mt-3 grid gap-2">
         {section.children.map((clause) => (
           <button
-            className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface/70 px-3 py-2 text-left transition hover:border-primary/45 hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary"
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-md border border-border bg-surface/70 px-3 py-2 text-left transition hover:border-primary/45 hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary"
             key={clause.id}
             onClick={() => onSelectClause(clause.id, section.id)}
             type="button"
           >
-            <span className="truncate text-sm">{clause.label}</span>
-            <Badge className="shrink-0" tone={riskBadgeTone(clause.risk)}>
+            <span className="min-w-0 text-sm leading-5 [overflow-wrap:anywhere]">
+              {clause.label}
+            </span>
+            <Badge
+              className="justify-self-end whitespace-nowrap"
+              tone={riskBadgeTone(clause.risk)}
+            >
               {clause.risk}
             </Badge>
           </button>
