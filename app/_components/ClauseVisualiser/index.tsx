@@ -41,11 +41,11 @@ type FlowNodeData = {
 };
 
 const sectionToneClass: Record<FlowTone, string> = {
-  accent: "border-ai-accent/45 bg-ai-accent/10 text-ai-accent",
-  danger: "border-danger/45 bg-danger/10 text-danger",
-  neutral: "border-border bg-background text-muted-foreground",
-  success: "border-success/45 bg-success/10 text-success",
-  warning: "border-warning/45 bg-warning/10 text-warning",
+  accent: "border-ai-accent/45 text-ai-accent",
+  danger: "border-danger/45 text-danger",
+  neutral: "border-border text-muted-foreground",
+  success: "border-success/45 text-success",
+  warning: "border-warning/45 text-warning",
 };
 
 const detailNodes: Node<FlowNodeData>[] = [
@@ -161,17 +161,33 @@ export function ClauseVisualiser({
     }
 
     if (selectedSection) {
-      return selectedSection.children.map((clause, index) => ({
-        data: {
-          clauses: clause.summary,
-          label: clause.label,
-          risk: `${clause.risk} risk`,
-          tone: riskTone(clause.risk),
+      return [
+        {
+          data: {
+            clauses: `${selectedSection.count} clauses`,
+            label: selectedSection.label,
+            risk: `${selectedSection.risk} risk`,
+            tone: riskTone(selectedSection.risk),
+          },
+          id: selectedSection.id,
+          position: { x: 420, y: 20 },
+          type: "section",
         },
-        id: clause.id,
-        position: { x: index * 220, y: index % 2 === 0 ? 80 : 220 },
-        type: "section",
-      }));
+        ...selectedSection.children.map((clause, index) => ({
+          data: {
+            clauses: clause.summary,
+            label: clause.label,
+            risk: `${clause.risk} risk`,
+            tone: riskTone(clause.risk),
+          },
+          id: clause.id,
+          position: {
+            x: (index % 4) * 280,
+            y: Math.floor(index / 4) * 210 + 220,
+          },
+          type: "section",
+        })),
+      ];
     }
 
     return [
@@ -183,7 +199,7 @@ export function ClauseVisualiser({
           tone: "neutral",
         },
         id: "agreement",
-        position: { x: 440, y: 20 },
+        position: { x: 420, y: 20 },
         type: "section",
       },
       ...contractOutline.map((section, index) => ({
@@ -195,8 +211,8 @@ export function ClauseVisualiser({
         },
         id: section.id,
         position: {
-          x: (index % 4) * 250,
-          y: Math.floor(index / 4) * 190 + 180,
+          x: (index % 4) * 280,
+          y: Math.floor(index / 4) * 220 + 210,
         },
         type: "section",
       })),
@@ -209,11 +225,11 @@ export function ClauseVisualiser({
     }
 
     if (selectedSection) {
-      return selectedSection.children.slice(1).map((clause, index) => ({
+      return selectedSection.children.map((clause) => ({
         animated: true,
-        id: `${selectedSection.children[index]!.id}-${clause.id}`,
+        id: `${selectedSection.id}-${clause.id}`,
         markerEnd: { type: MarkerType.ArrowClosed },
-        source: selectedSection.children[index]!.id,
+        source: selectedSection.id,
         target: clause.id,
         type: "smoothstep",
       }));
@@ -305,7 +321,7 @@ export function ClauseVisualiser({
         >
           <Background color="#334155" gap={18} size={1} />
           <Controls
-            className="!border !border-border !bg-surface !shadow-none"
+            className="clause-flow-controls !border !border-border !bg-surface !shadow-none"
             showInteractive={false}
           />
         </ReactFlow>
@@ -317,7 +333,7 @@ export function ClauseVisualiser({
 function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
   return (
     <div
-      className={`min-w-44 rounded-md border px-4 py-3 shadow-xl shadow-black/15 ${sectionToneClass[data.tone]}`}
+      className={`min-w-48 rounded-md border bg-surface px-4 py-3 shadow-xl shadow-black/15 ${sectionToneClass[data.tone]}`}
     >
       <Handle className="!bg-border" position={Position.Top} type="target" />
       <div className="flex items-start gap-3">
