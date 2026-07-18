@@ -26,6 +26,14 @@ import {
   findContractClause,
   findContractSection,
 } from "../contractOutline";
+import {
+  branchBottomY,
+  branchGap,
+  branchPositions,
+  branchRootY,
+  branchTopY,
+  hierarchyEdges,
+} from "./layout";
 import type { ClauseVisualiserProps } from "./types";
 
 type FlowTone = "neutral" | "success" | "warning" | "danger" | "accent";
@@ -36,10 +44,6 @@ type FlowNodeData = {
   risk: string;
   tone: FlowTone;
 };
-
-const childGap = 320;
-const childY = 260;
-const rootY = 30;
 
 const sectionToneClass: Record<FlowTone, string> = {
   accent: "border-ai-accent/45 text-ai-accent",
@@ -64,9 +68,7 @@ export function ClauseVisualiser({
     }
 
     if (selectedSection) {
-      const rootX = centerX(selectedSection.children.length);
-
-      return [
+      return hierarchyNodes(
         {
           data: {
             clauses: `${selectedSection.count} clauses`,
@@ -75,10 +77,10 @@ export function ClauseVisualiser({
             tone: riskTone(selectedSection.risk),
           },
           id: selectedSection.id,
-          position: { x: rootX, y: rootY },
+          position: { x: 0, y: 0 },
           type: "section",
         },
-        ...selectedSection.children.map((clause, index) => ({
+        selectedSection.children.map((clause) => ({
           data: {
             clauses: clause.summary,
             label: clause.label,
@@ -86,15 +88,13 @@ export function ClauseVisualiser({
             tone: riskTone(clause.risk),
           },
           id: clause.id,
-          position: { x: index * childGap, y: childY },
+          position: { x: 0, y: 0 },
           type: "section",
         })),
-      ];
+      );
     }
 
-    const rootX = centerX(contractOutline.length);
-
-    return [
+    return hierarchyNodes(
       {
         data: {
           clauses: "142 clauses",
@@ -103,10 +103,10 @@ export function ClauseVisualiser({
           tone: "neutral",
         },
         id: "agreement",
-        position: { x: rootX, y: rootY },
+        position: { x: 0, y: 0 },
         type: "section",
       },
-      ...contractOutline.map((section, index) => ({
+      contractOutline.map((section) => ({
         data: {
           clauses: `${section.count} clauses`,
           label: section.label,
@@ -114,10 +114,10 @@ export function ClauseVisualiser({
           tone: riskTone(section.risk),
         },
         id: section.id,
-        position: { x: index * childGap, y: childY },
+        position: { x: 0, y: 0 },
         type: "section",
       })),
-    ];
+    );
   }, [selectedClause, selectedSection]);
 
   const edges = useMemo<Edge[]>(() => {
@@ -126,24 +126,16 @@ export function ClauseVisualiser({
     }
 
     if (selectedSection) {
-      return selectedSection.children.map((clause) => ({
-        animated: true,
-        id: `${selectedSection.id}-${clause.id}`,
-        markerEnd: { type: MarkerType.ArrowClosed },
-        source: selectedSection.id,
-        target: clause.id,
-        type: "smoothstep",
-      }));
+      return hierarchyEdges(
+        selectedSection.id,
+        selectedSection.children.map((clause) => clause.id),
+      );
     }
 
-    return contractOutline.map((section) => ({
-      animated: true,
-      id: `agreement-${section.id}`,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      source: "agreement",
-      target: section.id,
-      type: "smoothstep",
-    }));
+    return hierarchyEdges(
+      "agreement",
+      contractOutline.map((section) => section.id),
+    );
   }, [selectedClause, selectedSection]);
 
   const visualiserTitle =
@@ -218,9 +210,17 @@ function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
     >
       <Handle
         className="!size-0 !border-0 !bg-transparent !opacity-0"
+        id="top"
         isConnectable={false}
         position={Position.Top}
         type="target"
+      />
+      <Handle
+        className="!size-0 !border-0 !bg-transparent !opacity-0"
+        id="top"
+        isConnectable={false}
+        position={Position.Top}
+        type="source"
       />
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm border border-current/30 bg-background/55">
@@ -242,16 +242,38 @@ function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
       </div>
       <Handle
         className="!size-0 !border-0 !bg-transparent !opacity-0"
+        id="bottom"
         isConnectable={false}
         position={Position.Bottom}
         type="source"
+      />
+      <Handle
+        className="!size-0 !border-0 !bg-transparent !opacity-0"
+        id="bottom"
+        isConnectable={false}
+        position={Position.Bottom}
+        type="target"
       />
     </div>
   );
 }
 
-function centerX(childCount: number) {
-  return ((childCount - 1) * childGap) / 2;
+function hierarchyNodes(
+  root: Node<FlowNodeData>,
+  children: Node<FlowNodeData>[],
+) {
+  const positions = branchPositions(children.length);
+
+  return [
+    {
+      ...root,
+      position: { x: positions.rootX, y: branchRootY },
+    },
+    ...children.map((child, index) => ({
+      ...child,
+      position: positions.children[index]!,
+    })),
+  ];
 }
 
 function riskTone(risk: "Low" | "Medium" | "High"): FlowTone {
@@ -274,7 +296,7 @@ function clauseFlowNodes(
         tone: riskTone(section.risk),
       },
       id: section.id,
-      position: { x: childGap, y: rootY },
+      position: { x: branchGap, y: branchTopY },
       type: "section",
     },
     {
@@ -285,7 +307,7 @@ function clauseFlowNodes(
         tone: riskTone(clause.risk),
       },
       id: clause.id,
-      position: { x: childGap, y: 230 },
+      position: { x: branchGap, y: branchRootY },
       type: "section",
     },
     {
@@ -296,7 +318,7 @@ function clauseFlowNodes(
         tone: riskTone(clause.risk),
       },
       id: `${clause.id}-risk`,
-      position: { x: 0, y: 460 },
+      position: { x: 0, y: branchBottomY },
       type: "section",
     },
     {
@@ -307,7 +329,7 @@ function clauseFlowNodes(
         tone: "neutral",
       },
       id: `${clause.id}-action`,
-      position: { x: childGap * 2, y: 460 },
+      position: { x: branchGap * 2, y: branchBottomY },
       type: "section",
     },
   ];
