@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  ArrowRight,
   BookOpenText,
   ChevronRight,
   FileText,
@@ -190,13 +189,6 @@ export function Sidebar({ analysis, roleLabel }: SidebarProps) {
             value={analysis.navItems.find((item) => item.id === "risks")?.count ?? 0}
           />
         </dl>
-        <a
-          className="mt-5 inline-flex items-center gap-2 font-medium text-primary hover:text-foreground"
-          href="#overview"
-        >
-          View all insights
-          <ArrowRight aria-hidden="true" className="size-3.5" />
-        </a>
       </footer>
     </aside>
   );

@@ -1,4 +1,4 @@
-import { List, Route, Share2 } from "lucide-react";
+import { List, Route } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -29,31 +29,12 @@ export function GraphPanel({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button icon={Share2} size="sm" variant="primary">
-            Map view
-          </Button>
           <Button icon={Route} size="sm">
-            Path view
+            Flow
           </Button>
           <Button icon={List} size="sm">
-            List view
+            Explain
           </Button>
-          <span className="ml-1 hidden text-xs text-muted-foreground sm:inline">
-            Depth
-          </span>
-          {[1, 2, 3].map((depth) => (
-            <button
-              className={`size-8 rounded-md border text-xs font-medium transition ${
-                depth === 1
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-border bg-background text-muted-foreground hover:text-foreground"
-              }`}
-              key={depth}
-              type="button"
-            >
-              {depth}
-            </button>
-          ))}
         </div>
       </div>
       <StaticContractGraph
