@@ -37,6 +37,10 @@ type FlowNodeData = {
   tone: FlowTone;
 };
 
+const childGap = 320;
+const childY = 260;
+const rootY = 30;
+
 const sectionToneClass: Record<FlowTone, string> = {
   accent: "border-ai-accent/45 text-ai-accent",
   danger: "border-danger/45 text-danger",
@@ -60,6 +64,8 @@ export function ClauseVisualiser({
     }
 
     if (selectedSection) {
+      const rootX = centerX(selectedSection.children.length);
+
       return [
         {
           data: {
@@ -69,7 +75,7 @@ export function ClauseVisualiser({
             tone: riskTone(selectedSection.risk),
           },
           id: selectedSection.id,
-          position: { x: 420, y: 20 },
+          position: { x: rootX, y: rootY },
           type: "section",
         },
         ...selectedSection.children.map((clause, index) => ({
@@ -80,14 +86,13 @@ export function ClauseVisualiser({
             tone: riskTone(clause.risk),
           },
           id: clause.id,
-          position: {
-            x: (index % 4) * 280,
-            y: Math.floor(index / 4) * 210 + 220,
-          },
+          position: { x: index * childGap, y: childY },
           type: "section",
         })),
       ];
     }
+
+    const rootX = centerX(contractOutline.length);
 
     return [
       {
@@ -98,7 +103,7 @@ export function ClauseVisualiser({
           tone: "neutral",
         },
         id: "agreement",
-        position: { x: 420, y: 20 },
+        position: { x: rootX, y: rootY },
         type: "section",
       },
       ...contractOutline.map((section, index) => ({
@@ -109,10 +114,7 @@ export function ClauseVisualiser({
           tone: riskTone(section.risk),
         },
         id: section.id,
-        position: {
-          x: (index % 4) * 280,
-          y: Math.floor(index / 4) * 220 + 210,
-        },
+        position: { x: index * childGap, y: childY },
         type: "section",
       })),
     ];
@@ -178,6 +180,7 @@ export function ClauseVisualiser({
           key={`${activeSectionId ?? "contract"}-${activeClauseId ?? "all"}`}
           nodeTypes={{ section: FlowNode }}
           nodes={nodes}
+          nodesConnectable={false}
           nodesDraggable={false}
           nodesFocusable
           onNodeClick={(_, node) => {
@@ -195,6 +198,7 @@ export function ClauseVisualiser({
           }}
           panOnScroll
           proOptions={{ hideAttribution: true }}
+          zoomOnDoubleClick={false}
         >
           <Background color="#334155" gap={18} size={1} />
           <Controls
@@ -212,7 +216,12 @@ function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
     <div
       className={`min-w-48 rounded-md border bg-surface px-4 py-3 shadow-xl shadow-black/15 ${sectionToneClass[data.tone]}`}
     >
-      <Handle className="!bg-border" position={Position.Top} type="target" />
+      <Handle
+        className="!size-0 !border-0 !bg-transparent !opacity-0"
+        isConnectable={false}
+        position={Position.Top}
+        type="target"
+      />
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm border border-current/30 bg-background/55">
           {data.tone === "danger" ? (
@@ -231,9 +240,18 @@ function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
           <p className="mt-1 text-xs font-medium">{data.risk}</p>
         </div>
       </div>
-      <Handle className="!bg-border" position={Position.Bottom} type="source" />
+      <Handle
+        className="!size-0 !border-0 !bg-transparent !opacity-0"
+        isConnectable={false}
+        position={Position.Bottom}
+        type="source"
+      />
     </div>
   );
+}
+
+function centerX(childCount: number) {
+  return ((childCount - 1) * childGap) / 2;
 }
 
 function riskTone(risk: "Low" | "Medium" | "High"): FlowTone {
@@ -256,7 +274,7 @@ function clauseFlowNodes(
         tone: riskTone(section.risk),
       },
       id: section.id,
-      position: { x: 0, y: 170 },
+      position: { x: childGap, y: rootY },
       type: "section",
     },
     {
@@ -267,18 +285,7 @@ function clauseFlowNodes(
         tone: riskTone(clause.risk),
       },
       id: clause.id,
-      position: { x: 360, y: 40 },
-      type: "section",
-    },
-    {
-      data: {
-        clauses: "What this clause means in business language.",
-        label: "Plain-English meaning",
-        risk: "Explanation",
-        tone: "accent",
-      },
-      id: `${clause.id}-plain`,
-      position: { x: 360, y: 250 },
+      position: { x: childGap, y: 230 },
       type: "section",
     },
     {
@@ -289,7 +296,7 @@ function clauseFlowNodes(
         tone: riskTone(clause.risk),
       },
       id: `${clause.id}-risk`,
-      position: { x: 720, y: 170 },
+      position: { x: 0, y: 460 },
       type: "section",
     },
     {
@@ -300,7 +307,7 @@ function clauseFlowNodes(
         tone: "neutral",
       },
       id: `${clause.id}-action`,
-      position: { x: 720, y: 380 },
+      position: { x: childGap * 2, y: 460 },
       type: "section",
     },
   ];
@@ -314,14 +321,6 @@ function clauseFlowEdges(clauseId: string): Edge[] {
       markerEnd: { type: MarkerType.ArrowClosed },
       source: findContractClause(clauseId)!.section.id,
       target: clauseId,
-      type: "smoothstep",
-    },
-    {
-      animated: true,
-      id: `${clauseId}-plain`,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      source: clauseId,
-      target: `${clauseId}-plain`,
       type: "smoothstep",
     },
     {
