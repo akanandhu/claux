@@ -5,7 +5,6 @@ export type DashboardMainProps = {
   activeSectionId: string | null;
   analysis: DemoAnalysisFixture;
   onSelectClause: (clauseId: string, sectionId: string) => void;
-  onSelectInspector: (inspectorId: string) => void;
   onSelectSection: (sectionId: string) => void;
   selectedInspector: DemoAnalysisFixture["inspectors"][number];
   selectedNodeId: string;

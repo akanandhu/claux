@@ -14,15 +14,13 @@ import {
 import {
   AlertTriangle,
   BookOpenText,
-  Brain,
   CheckCircle2,
   GitBranch,
   ShieldAlert,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { Badge } from "@/components/Badge";
-import { Button } from "@/components/Button";
 import {
   contractOutline,
   findContractClause,
@@ -30,7 +28,6 @@ import {
 } from "../contractOutline";
 import type { ClauseVisualiserProps } from "./types";
 
-type VisualiserMode = "flow" | "explain";
 type FlowTone = "neutral" | "success" | "warning" | "danger" | "accent";
 
 type FlowNodeData = {
@@ -48,116 +45,18 @@ const sectionToneClass: Record<FlowTone, string> = {
   warning: "border-warning/45 text-warning",
 };
 
-const detailNodes: Node<FlowNodeData>[] = [
-  {
-    data: {
-      clauses: "Provider sends invoice",
-      label: "Invoice issued",
-      risk: "Trigger",
-      tone: "accent",
-    },
-    id: "invoice",
-    position: { x: 40, y: 80 },
-    type: "section",
-  },
-  {
-    data: {
-      clauses: "Payment due within 30 days",
-      label: "Due date",
-      risk: "Condition",
-      tone: "warning",
-    },
-    id: "due-date",
-    position: { x: 300, y: 80 },
-    type: "section",
-  },
-  {
-    data: {
-      clauses: "Payment not received",
-      label: "Late payment",
-      risk: "Consequence",
-      tone: "danger",
-    },
-    id: "late-payment",
-    position: { x: 560, y: 80 },
-    type: "section",
-  },
-  {
-    data: {
-      clauses: "2% monthly interest",
-      label: "Interest applies",
-      risk: "Commercial risk",
-      tone: "danger",
-    },
-    id: "interest",
-    position: { x: 560, y: 245 },
-    type: "section",
-  },
-  {
-    data: {
-      clauses: "Provider may suspend services",
-      label: "Termination right",
-      risk: "Provider right",
-      tone: "warning",
-    },
-    id: "termination-right",
-    position: { x: 820, y: 245 },
-    type: "section",
-  },
-];
-
-const detailEdges: Edge[] = [
-  {
-    animated: true,
-    id: "invoice-due",
-    markerEnd: { type: MarkerType.ArrowClosed },
-    source: "invoice",
-    target: "due-date",
-    type: "smoothstep",
-  },
-  {
-    animated: true,
-    id: "due-late",
-    markerEnd: { type: MarkerType.ArrowClosed },
-    source: "due-date",
-    target: "late-payment",
-    type: "smoothstep",
-  },
-  {
-    animated: true,
-    id: "late-interest",
-    markerEnd: { type: MarkerType.ArrowClosed },
-    source: "late-payment",
-    target: "interest",
-    type: "smoothstep",
-  },
-  {
-    animated: true,
-    id: "interest-termination",
-    markerEnd: { type: MarkerType.ArrowClosed },
-    source: "interest",
-    target: "termination-right",
-    type: "smoothstep",
-  },
-];
-
 export function ClauseVisualiser({
   activeClauseId,
   activeSectionId,
   onSelectClause,
-  onSelectInspector,
   onSelectSection,
-  selectedInspector,
 }: ClauseVisualiserProps) {
-  const [mode, setMode] = useState<VisualiserMode>("flow");
   const selectedSection = findContractSection(activeSectionId);
   const selectedClause = findContractClause(activeClauseId);
-  const activeMode: VisualiserMode =
-    mode === "explain" && selectedClause ? "explain" : "flow";
 
   const nodes = useMemo<Node<FlowNodeData>[]>(() => {
-    if (activeMode === "explain") {
-      return detailNodes;
+    if (selectedClause) {
+      return clauseFlowNodes(selectedClause);
     }
 
     if (selectedSection) {
@@ -217,11 +116,11 @@ export function ClauseVisualiser({
         type: "section",
       })),
     ];
-  }, [activeMode, selectedSection]);
+  }, [selectedClause, selectedSection]);
 
   const edges = useMemo<Edge[]>(() => {
-    if (activeMode === "explain") {
-      return detailEdges;
+    if (selectedClause) {
+      return clauseFlowEdges(selectedClause.clause.id);
     }
 
     if (selectedSection) {
@@ -243,7 +142,7 @@ export function ClauseVisualiser({
       target: section.id,
       type: "smoothstep",
     }));
-  }, [activeMode, selectedSection]);
+  }, [selectedClause, selectedSection]);
 
   const visualiserTitle =
     selectedClause?.clause.label ??
@@ -255,48 +154,28 @@ export function ClauseVisualiser({
       <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold">
-              {activeMode === "flow" ? visualiserTitle : selectedInspector.title}
-            </h2>
-            <Badge tone={activeMode === "flow" ? "primary" : "danger"}>
-              {activeMode === "flow" ? "Flow" : "High risk"}
-            </Badge>
+            <h2 className="text-base font-semibold">{visualiserTitle}</h2>
+            <Badge tone="primary">Flow</Badge>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {activeMode === "flow"
-              ? "General flow of sections and risk areas in this agreement."
-              : "Explain how the selected clause connects to obligations and risk."}
+            General flow of sections, clauses, and connected risk areas in this
+            agreement.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            icon={GitBranch}
-            onClick={() => setMode("flow")}
-            size="sm"
-            variant={activeMode === "flow" ? "primary" : "secondary"}
-          >
+          <div className="inline-flex h-8 items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 text-xs font-medium text-primary">
+            <GitBranch aria-hidden="true" className="size-4" />
             Flow
-          </Button>
-          <Button
-            icon={Brain}
-            disabled={!selectedClause}
-            onClick={() => setMode("explain")}
-            size="sm"
-            variant={activeMode === "explain" ? "primary" : "secondary"}
-          >
-            Explain
-          </Button>
+          </div>
         </div>
       </div>
-
-      {activeMode === "explain" ? <ExplainSection /> : null}
 
       <div className="h-[520px] border-t border-border bg-background">
         <ReactFlow
           edges={edges}
           fitView
           fitViewOptions={{ padding: 0.22 }}
-          key={`${activeMode}-${activeSectionId ?? "contract"}-${activeClauseId ?? "all"}`}
+          key={`${activeSectionId ?? "contract"}-${activeClauseId ?? "all"}`}
           nodeTypes={{ section: FlowNode }}
           nodes={nodes}
           nodesDraggable={false}
@@ -312,8 +191,6 @@ export function ClauseVisualiser({
 
             if (clause) {
               onSelectClause(clause.clause.id, clause.section.id);
-              onSelectInspector("liability-cap");
-              setMode("explain");
             }
           }}
           panOnScroll
@@ -365,30 +242,103 @@ function riskTone(risk: "Low" | "Medium" | "High"): FlowTone {
   return "success";
 }
 
-function ExplainSection() {
-  return (
-    <div className="grid border-t border-border lg:grid-cols-3">
-      <section className="border-b border-border p-4 lg:border-b-0 lg:border-r">
-        <h3 className="text-sm font-medium">In simple terms</h3>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          If payment is late, extra charges can apply and the provider may gain
-          suspension or termination rights after notice.
-        </p>
-      </section>
-      <section className="border-b border-border p-4 lg:border-b-0 lg:border-r">
-        <h3 className="text-sm font-medium">Why this matters</h3>
-        <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
-          <li>Late payment can increase the amount owed.</li>
-          <li>Service access may be interrupted after notice.</li>
-          <li>Termination can become possible if default continues.</li>
-        </ul>
-      </section>
-      <section className="p-4">
-        <h3 className="text-sm font-medium text-success">Your role</h3>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Customer: pay invoices on time and respond quickly if a notice arrives.
-        </p>
-      </section>
-    </div>
-  );
+function clauseFlowNodes(
+  selection: NonNullable<ReturnType<typeof findContractClause>>,
+): Node<FlowNodeData>[] {
+  const { clause, section } = selection;
+
+  return [
+    {
+      data: {
+        clauses: `${section.count} clauses`,
+        label: section.label,
+        risk: `${section.risk} risk section`,
+        tone: riskTone(section.risk),
+      },
+      id: section.id,
+      position: { x: 0, y: 170 },
+      type: "section",
+    },
+    {
+      data: {
+        clauses: clause.summary,
+        label: clause.label,
+        risk: `${clause.risk} risk clause`,
+        tone: riskTone(clause.risk),
+      },
+      id: clause.id,
+      position: { x: 360, y: 40 },
+      type: "section",
+    },
+    {
+      data: {
+        clauses: "What this clause means in business language.",
+        label: "Plain-English meaning",
+        risk: "Explanation",
+        tone: "accent",
+      },
+      id: `${clause.id}-plain`,
+      position: { x: 360, y: 250 },
+      type: "section",
+    },
+    {
+      data: {
+        clauses: "Review the commercial effect before signing.",
+        label: "Risk factor",
+        risk: `${clause.risk} priority`,
+        tone: riskTone(clause.risk),
+      },
+      id: `${clause.id}-risk`,
+      position: { x: 720, y: 170 },
+      type: "section",
+    },
+    {
+      data: {
+        clauses: "Confirm the clause matches your role and the connected terms.",
+        label: "Before signing",
+        risk: "Action",
+        tone: "neutral",
+      },
+      id: `${clause.id}-action`,
+      position: { x: 720, y: 380 },
+      type: "section",
+    },
+  ];
+}
+
+function clauseFlowEdges(clauseId: string): Edge[] {
+  return [
+    {
+      animated: true,
+      id: `section-${clauseId}`,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      source: findContractClause(clauseId)!.section.id,
+      target: clauseId,
+      type: "smoothstep",
+    },
+    {
+      animated: true,
+      id: `${clauseId}-plain`,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      source: clauseId,
+      target: `${clauseId}-plain`,
+      type: "smoothstep",
+    },
+    {
+      animated: true,
+      id: `${clauseId}-risk`,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      source: clauseId,
+      target: `${clauseId}-risk`,
+      type: "smoothstep",
+    },
+    {
+      animated: true,
+      id: `${clauseId}-action`,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      source: `${clauseId}-risk`,
+      target: `${clauseId}-action`,
+      type: "smoothstep",
+    },
+  ];
 }

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/Badge";
 import { ClauseVisualiser } from "../ClauseVisualiser";
+import { findContractClause, findContractSection } from "../contractOutline";
 import { metricTone } from "../constants";
 import type { DashboardMainProps } from "./types";
 import DashboardMetrics from "../DashboardMetrics";
@@ -48,10 +49,12 @@ export function DashboardMain({
   activeClauseId,
   activeSectionId,
   onSelectClause,
-  onSelectInspector,
   onSelectSection,
   selectedInspector,
 }: DashboardMainProps) {
+  const activeClause = findContractClause(activeClauseId);
+  const activeSection = findContractSection(activeSectionId);
+
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-5">
       <DashboardMetrics
@@ -62,33 +65,52 @@ export function DashboardMain({
         activeClauseId={activeClauseId}
         activeSectionId={activeSectionId}
         onSelectClause={onSelectClause}
-        onSelectInspector={onSelectInspector}
         onSelectSection={onSelectSection}
-        selectedInspector={selectedInspector}
       />
-      <PlainEnglishExplanation inspector={selectedInspector} />
+      <PlainEnglishExplanation
+        inspector={selectedInspector}
+        selectedClause={activeClause}
+        selectedSection={activeSection}
+      />
     </div>
   );
 }
 
 function PlainEnglishExplanation({
   inspector,
+  selectedClause,
+  selectedSection,
 }: {
   inspector: DashboardMainProps["selectedInspector"];
+  selectedClause: ReturnType<typeof findContractClause>;
+  selectedSection: ReturnType<typeof findContractSection>;
 }) {
+  const title =
+    selectedClause?.clause.label ??
+    selectedSection?.label ??
+    inspector.clauseRef;
+  const summary =
+    selectedClause?.clause.summary ??
+    selectedSection?.plainEnglishSummary ??
+    inspector.summary;
+  const impact =
+    selectedClause
+      ? `${selectedClause.clause.risk} priority: review this clause together with ${selectedClause.section.label}.`
+      : selectedSection?.signGuidance ?? inspector.commercialImpact;
+
   return (
     <section className="rounded-md border border-border bg-surface p-4">
       <div className="flex items-center gap-2">
         <Badge tone="primary">Plain English explanation</Badge>
         <span className="font-mono text-xs text-muted-foreground">
-          {inspector.clauseRef}
+          {title}
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        {inspector.summary}
+        {summary}
       </p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        {inspector.commercialImpact}
+        {impact}
       </p>
     </section>
   );

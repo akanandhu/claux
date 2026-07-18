@@ -76,18 +76,6 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
     }, 1200);
   }
 
-  function handleSelectInspector(inspectorId: string) {
-    setRightSidebarOpen(true);
-    setRightSidebarView("inspector");
-    setInspectorOpen(true);
-
-    if (selectedInspector.id !== inspectorId) {
-      setInspectorHistory((history) => [...history, selectedInspector.id]);
-    }
-
-    selectInspector(inspectorId);
-  }
-
   function handleSelectSection(sectionId: string) {
     setActiveSectionId(sectionId);
     setRightSidebarSectionId(sectionId);
@@ -180,7 +168,6 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
             activeSectionId={activeSectionId}
             analysis={analysis}
             onSelectClause={handleSelectClause}
-            onSelectInspector={handleSelectInspector}
             onSelectSection={handleSelectSection}
             selectedInspector={selectedInspector}
             selectedNodeId={selectedNodeId}
@@ -490,25 +477,65 @@ function ClauseRiskPanel({
   clause: NonNullable<ReturnType<typeof findContractClause>>["clause"];
   sectionLabel: string;
 }) {
+  const hazards = clauseHazards(clause);
+
   return (
     <section className="rounded-md border border-border bg-background/55 p-4">
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Clause risk factors
+        Clause detail
       </p>
       <h2 className="mt-3 text-base font-semibold">{clause.label}</h2>
       <p className="mt-1 text-xs text-muted-foreground">{sectionLabel}</p>
       <Badge className="mt-4" tone={clause.risk === "High" ? "danger" : "warning"}>
         {clause.risk} risk
       </Badge>
+      <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        In simple terms
+      </p>
       <p className="mt-4 text-sm leading-6 text-muted-foreground">
         {clause.summary}
       </p>
+      <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Why this matters
+      </p>
+      <ul className="mt-3 space-y-2">
+        {clauseWhyItMatters(clause).map((item) => (
+          <li className="flex gap-2 text-sm leading-6" key={item}>
+            <AlertTriangle
+              aria-hidden="true"
+              className="mt-1 size-4 shrink-0 text-warning"
+            />
+            <span className="text-muted-foreground">{item}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Hazards
+      </p>
+      <ul className="mt-3 space-y-2">
+        {hazards.map((hazard) => (
+          <li className="flex gap-2 text-sm leading-6" key={hazard}>
+            <AlertTriangle
+              aria-hidden="true"
+              className="mt-1 size-4 shrink-0 text-warning"
+            />
+            <span className="text-muted-foreground">{hazard}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-5 rounded-md border border-border bg-surface/80 p-3">
+        <p className="text-sm font-medium text-success">Your role</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Read this clause against your role in the deal and check whether the
+          connected section gives the other party extra leverage.
+        </p>
+      </div>
       <div className="mt-5 rounded-md border border-border bg-surface/80 p-3">
         <p className="text-sm font-medium">Should you sign?</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          You can proceed only after confirming this clause matches your
-          commercial position and the connected sections do not create hidden
-          downstream exposure.
+          {clause.risk === "High"
+            ? "Do not sign until this clause is reviewed and the practical downside is acceptable."
+            : "This may be signable if the wording matches the commercial deal and does not conflict with nearby clauses."}
         </p>
       </div>
     </section>
@@ -525,6 +552,42 @@ function riskBadgeTone(risk: ContractSection["risk"]) {
   if (risk === "High") return "danger";
   if (risk === "Medium") return "warning";
   return "success";
+}
+
+function clauseHazards({
+  label,
+  risk,
+}: NonNullable<ReturnType<typeof findContractClause>>["clause"]) {
+  if (risk === "High") {
+    return [
+      `${label} can materially change payment, remedy, or operational leverage.`,
+      "The connected section should be reviewed before relying on the summary.",
+      "A nearby exception or cross-reference may change the practical result.",
+    ];
+  }
+
+  if (risk === "Medium") {
+    return [
+      `${label} can still affect day-to-day performance or negotiation leverage.`,
+      "Confirm the clause matches the commercial expectation before signing.",
+    ];
+  }
+
+  return [
+    `${label} appears lower risk, but it can still affect how later clauses are interpreted.`,
+  ];
+}
+
+function clauseWhyItMatters({
+  risk,
+  summary,
+}: NonNullable<ReturnType<typeof findContractClause>>["clause"]) {
+  return [
+    summary,
+    risk === "High"
+      ? "Because this is high risk, it should be checked before the contract is treated as acceptable."
+      : "This should be checked against the surrounding section so the contract is interpreted consistently.",
+  ];
 }
 
 function RightSidebarBreadcrumb({
