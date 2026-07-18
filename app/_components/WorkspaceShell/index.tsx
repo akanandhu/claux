@@ -50,7 +50,10 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
         />
         <section className="flex min-w-0 flex-col">
           <div className="sticky top-0 z-20">
-            <TopBar contract={workspace.activeAnalysis.contract} />
+            <TopBar
+              contract={workspace.activeAnalysis.contract}
+              onClearWorkspace={workspace.clearWorkspace}
+            />
           </div>
           <WorkspaceStatusBanner stage={workspace.job.stage} />
           <DashboardMain

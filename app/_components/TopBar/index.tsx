@@ -1,10 +1,10 @@
-import { Bot, Download, GitBranch, Search, Settings, UserRound } from "lucide-react";
+import { Bot, Download, GitBranch, Search, Trash2, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import type { TopBarProps } from "./types";
 
-export function TopBar({ contract }: TopBarProps) {
+export function TopBar({ contract, onClearWorkspace }: TopBarProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/95 px-4 py-4 backdrop-blur lg:px-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -62,7 +62,12 @@ export function TopBar({ contract }: TopBarProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Button icon={GitBranch}>Compare</Button>
             <Button icon={Download}>Export</Button>
-            <Button icon={Settings} iconOnlyLabel="Settings" size="icon" />
+            <Button
+              icon={Trash2}
+              iconOnlyLabel="Clear local workspace"
+              onClick={onClearWorkspace}
+              size="icon"
+            />
             <Button icon={Bot} variant="primary">
               Ask
             </Button>
