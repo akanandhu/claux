@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   BookOpenText,
   ChevronRight,
@@ -11,71 +10,18 @@ import {
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { contractOutline } from "../contractOutline";
 import type { SidebarProps } from "./types";
 
-const contractOutline = [
-  {
-    children: ["1.1 Defined Terms", "1.2 Interpretation", "1.3 Order of Priority"],
-    count: 12,
-    label: "Definitions",
-  },
-  {
-    children: ["2.1 Service Scope", "2.2 Support", "2.3 Service Levels"],
-    count: 16,
-    label: "Services",
-  },
-  {
-    children: [
-      "3.1 Fees",
-      "3.2 Invoicing",
-      "3.3 Payment Due Date",
-      "3.4 Late Payment",
-      "3.5 Taxes",
-      "3.6 Refunds",
-      "3.7 Set-off",
-      "3.8 Currency",
-    ],
-    count: 8,
-    label: "Payment Terms",
-  },
-  {
-    children: ["4.1 Customer Materials", "4.2 Provider IP", "4.3 License Rights"],
-    count: 10,
-    label: "Intellectual Property",
-  },
-  {
-    children: ["5.1 Confidential Information", "5.2 Permitted Disclosures", "5.3 Survival"],
-    count: 7,
-    label: "Confidentiality",
-  },
-  {
-    children: ["6.1 Exclusions", "6.2 Liability Cap", "6.3 Indemnity"],
-    count: 9,
-    label: "Liability",
-  },
-  {
-    children: ["7.1 Term", "7.2 Termination for Cause", "7.3 Effect of Termination"],
-    count: 10,
-    label: "Termination",
-  },
-  {
-    children: ["8.1 Notices", "8.2 Assignment", "8.3 Governing Law"],
-    count: 12,
-    label: "General Provisions",
-  },
-];
-
 export function Sidebar({
+  activeClauseId,
+  activeSectionId,
   analysis,
   contractFileName,
+  onSelectClause,
+  onSelectSection,
   reviewerRoleLabel,
 }: SidebarProps) {
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
-
-  function toggleSection(label: string) {
-    setExpandedSection((current) => (current === label ? null : label));
-  }
-
   return (
     <aside className="flex max-h-screen flex-col border-b border-border bg-surface/85 px-4 py-4 xl:sticky xl:top-0 xl:h-screen xl:border-b-0 xl:border-r xl:px-5 xl:py-6">
       <div className="shrink-0">
@@ -131,20 +77,20 @@ export function Sidebar({
           {contractOutline.map((item, index) => (
             <li key={item.label}>
               <button
-                aria-expanded={expandedSection === item.label}
+                aria-expanded={activeSectionId === item.id}
                 className={`flex h-10 w-full items-center justify-between rounded-md px-2.5 text-sm transition focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary ${
-                  item.label === "Payment Terms"
+                  activeSectionId === item.id
                     ? "font-medium text-primary"
                     : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
                 }`}
-                onClick={() => toggleSection(item.label)}
+                onClick={() => onSelectSection(item.id)}
                 type="button"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <ChevronRight
                     aria-hidden="true"
                     className={`size-3.5 shrink-0 transition ${
-                      expandedSection === item.label ? "rotate-90" : ""
+                      activeSectionId === item.id ? "rotate-90" : ""
                     }`}
                   />
                   <BookOpenText aria-hidden="true" className="size-3.5 shrink-0" />
@@ -154,26 +100,27 @@ export function Sidebar({
                 </span>
                 <Badge className="shrink-0 text-[11px]">{item.count}</Badge>
               </button>
-              {expandedSection === item.label ? (
+              {activeSectionId === item.id ? (
                 <ul className="ml-4 mt-1 space-y-1 border-l border-border/70 pl-4">
                   {item.children.map((child) => (
-                    <li key={child}>
-                      <a
+                    <li key={child.id}>
+                      <button
                         className={`flex h-9 items-center justify-between rounded-md px-2 text-xs ${
-                          child === "3.4 Late Payment"
+                          activeClauseId === child.id
                             ? "bg-primary/15 font-medium text-primary"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
-                        href="#overview"
+                        onClick={() => onSelectClause(child.id, item.id)}
+                        type="button"
                       >
-                        <span className="truncate">{child}</span>
-                        {child === "3.4 Late Payment" ? (
+                        <span className="truncate">{child.label}</span>
+                        {child.risk === "High" ? (
                           <span
                             aria-hidden="true"
                             className="size-1.5 rounded-full bg-danger"
                           />
                         ) : null}
-                      </a>
+                      </button>
                     </li>
                   ))}
                 </ul>

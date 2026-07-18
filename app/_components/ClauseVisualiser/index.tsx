@@ -23,6 +23,11 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import {
+  contractOutline,
+  findContractClause,
+  findContractSection,
+} from "../contractOutline";
 import type { ClauseVisualiserProps } from "./types";
 
 type VisualiserMode = "flow" | "explain";
@@ -34,92 +39,6 @@ type FlowNodeData = {
   risk: string;
   tone: FlowTone;
 };
-
-const sectionNodes: Array<FlowNodeData & { id: string; x: number; y: number }> = [
-  {
-    clauses: "12 clauses",
-    id: "definitions",
-    label: "Definitions",
-    risk: "Low risk",
-    tone: "success",
-    x: 0,
-    y: 0,
-  },
-  {
-    clauses: "17 clauses",
-    id: "services",
-    label: "Services",
-    risk: "Medium risk",
-    tone: "warning",
-    x: 220,
-    y: 0,
-  },
-  {
-    clauses: "12 clauses",
-    id: "payment",
-    label: "Payment Terms",
-    risk: "High risk",
-    tone: "danger",
-    x: 440,
-    y: 0,
-  },
-  {
-    clauses: "11 clauses",
-    id: "liability",
-    label: "Liability",
-    risk: "High risk",
-    tone: "danger",
-    x: 660,
-    y: 0,
-  },
-  {
-    clauses: "10 clauses",
-    id: "termination",
-    label: "Termination",
-    risk: "Medium risk",
-    tone: "warning",
-    x: 880,
-    y: 0,
-  },
-  {
-    clauses: "10 clauses",
-    id: "ip",
-    label: "Intellectual Property",
-    risk: "Medium risk",
-    tone: "warning",
-    x: 220,
-    y: 190,
-  },
-  {
-    clauses: "7 clauses",
-    id: "confidentiality",
-    label: "Confidentiality",
-    risk: "Survives termination",
-    tone: "accent",
-    x: 440,
-    y: 190,
-  },
-  {
-    clauses: "12 clauses",
-    id: "general",
-    label: "General Provisions",
-    risk: "Needs metadata",
-    tone: "neutral",
-    x: 660,
-    y: 190,
-  },
-];
-
-const sectionEdges: Edge[] = sectionNodes.map((node) => ({
-  animated: true,
-  id: `agreement-${node.id}`,
-  markerEnd: {
-    type: MarkerType.ArrowClosed,
-  },
-  source: "agreement",
-  target: node.id,
-  type: "smoothstep",
-}));
 
 const sectionToneClass: Record<FlowTone, string> = {
   accent: "border-ai-accent/45 bg-ai-accent/10 text-ai-accent",
@@ -223,13 +142,36 @@ const detailEdges: Edge[] = [
 ];
 
 export function ClauseVisualiser({
+  activeClauseId,
+  activeSectionId,
+  onSelectClause,
   onSelectInspector,
+  onSelectSection,
   selectedInspector,
 }: ClauseVisualiserProps) {
   const [mode, setMode] = useState<VisualiserMode>("flow");
+  const selectedSection = findContractSection(activeSectionId);
+  const selectedClause = findContractClause(activeClauseId);
+  const activeMode: VisualiserMode =
+    mode === "explain" && selectedClause ? "explain" : "flow";
+
   const nodes = useMemo<Node<FlowNodeData>[]>(() => {
-    if (mode === "explain") {
+    if (activeMode === "explain") {
       return detailNodes;
+    }
+
+    if (selectedSection) {
+      return selectedSection.children.map((clause, index) => ({
+        data: {
+          clauses: clause.summary,
+          label: clause.label,
+          risk: `${clause.risk} risk`,
+          tone: riskTone(clause.risk),
+        },
+        id: clause.id,
+        position: { x: index * 220, y: index % 2 === 0 ? 80 : 220 },
+        type: "section",
+      }));
     }
 
     return [
@@ -244,16 +186,53 @@ export function ClauseVisualiser({
         position: { x: 440, y: 20 },
         type: "section",
       },
-      ...sectionNodes.map((node) => ({
-        data: node,
-        id: node.id,
-        position: { x: node.x, y: node.y + 180 },
+      ...contractOutline.map((section, index) => ({
+        data: {
+          clauses: `${section.count} clauses`,
+          label: section.label,
+          risk: `${section.risk} risk`,
+          tone: riskTone(section.risk),
+        },
+        id: section.id,
+        position: {
+          x: (index % 4) * 250,
+          y: Math.floor(index / 4) * 190 + 180,
+        },
         type: "section",
       })),
     ];
-  }, [mode]);
+  }, [activeMode, selectedSection]);
 
-  const edges = mode === "flow" ? sectionEdges : detailEdges;
+  const edges = useMemo<Edge[]>(() => {
+    if (activeMode === "explain") {
+      return detailEdges;
+    }
+
+    if (selectedSection) {
+      return selectedSection.children.slice(1).map((clause, index) => ({
+        animated: true,
+        id: `${selectedSection.children[index]!.id}-${clause.id}`,
+        markerEnd: { type: MarkerType.ArrowClosed },
+        source: selectedSection.children[index]!.id,
+        target: clause.id,
+        type: "smoothstep",
+      }));
+    }
+
+    return contractOutline.map((section) => ({
+      animated: true,
+      id: `agreement-${section.id}`,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      source: "agreement",
+      target: section.id,
+      type: "smoothstep",
+    }));
+  }, [activeMode, selectedSection]);
+
+  const visualiserTitle =
+    selectedClause?.clause.label ??
+    selectedSection?.label ??
+    "Master Service Agreement";
 
   return (
     <section className="overflow-hidden rounded-md border border-border bg-surface" id="overview">
@@ -261,14 +240,14 @@ export function ClauseVisualiser({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-semibold">
-              {mode === "flow" ? "Master Service Agreement" : selectedInspector.title}
+              {activeMode === "flow" ? visualiserTitle : selectedInspector.title}
             </h2>
-            <Badge tone={mode === "flow" ? "primary" : "danger"}>
-              {mode === "flow" ? "Flow" : "High risk"}
+            <Badge tone={activeMode === "flow" ? "primary" : "danger"}>
+              {activeMode === "flow" ? "Flow" : "High risk"}
             </Badge>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {mode === "flow"
+            {activeMode === "flow"
               ? "General flow of sections and risk areas in this agreement."
               : "Explain how the selected clause connects to obligations and risk."}
           </p>
@@ -278,34 +257,45 @@ export function ClauseVisualiser({
             icon={GitBranch}
             onClick={() => setMode("flow")}
             size="sm"
-            variant={mode === "flow" ? "primary" : "secondary"}
+            variant={activeMode === "flow" ? "primary" : "secondary"}
           >
             Flow
           </Button>
           <Button
             icon={Brain}
+            disabled={!selectedClause}
             onClick={() => setMode("explain")}
             size="sm"
-            variant={mode === "explain" ? "primary" : "secondary"}
+            variant={activeMode === "explain" ? "primary" : "secondary"}
           >
             Explain
           </Button>
         </div>
       </div>
 
-      {mode === "explain" ? <ExplainSection /> : null}
+      {activeMode === "explain" ? <ExplainSection /> : null}
 
       <div className="h-[520px] border-t border-border bg-background">
         <ReactFlow
           edges={edges}
           fitView
           fitViewOptions={{ padding: 0.22 }}
+          key={`${activeMode}-${activeSectionId ?? "contract"}-${activeClauseId ?? "all"}`}
           nodeTypes={{ section: FlowNode }}
           nodes={nodes}
           nodesDraggable={false}
           nodesFocusable
           onNodeClick={(_, node) => {
-            if (node.id === "payment" || node.id === "late-payment") {
+            const section = findContractSection(node.id);
+            const clause = findContractClause(node.id);
+
+            if (section) {
+              onSelectSection(section.id);
+              return;
+            }
+
+            if (clause) {
+              onSelectClause(clause.clause.id, clause.section.id);
               onSelectInspector("liability-cap");
               setMode("explain");
             }
@@ -351,6 +341,12 @@ function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
       <Handle className="!bg-border" position={Position.Bottom} type="source" />
     </div>
   );
+}
+
+function riskTone(risk: "Low" | "Medium" | "High"): FlowTone {
+  if (risk === "High") return "danger";
+  if (risk === "Medium") return "warning";
+  return "success";
 }
 
 function ExplainSection() {

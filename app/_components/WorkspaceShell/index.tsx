@@ -16,12 +16,14 @@ import { ClauseInspector } from "../ClauseInspector";
 import { DashboardMain } from "../DashboardMain";
 import { Sidebar } from "../Sidebar";
 import { TopBar } from "../TopBar";
+import { findContractClause, findContractSection } from "../contractOutline";
 import { useWorkspaceSelection } from "./useHook";
+import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import type { WorkspaceShellProps } from "./types";
 
 type ReviewerRole = "received" | "prepared";
-type RightSidebarView = "summary" | "inspector";
+type RightSidebarView = "summary" | "clause" | "inspector";
 
 const roleLabels: Record<ReviewerRole, string> = {
   prepared: "I prepared this contract",
@@ -39,6 +41,8 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
   const [workspaceReady, setWorkspaceReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [inspectorHistory, setInspectorHistory] = useState<string[]>([]);
+  const [activeClauseId, setActiveClauseId] = useState<string | null>(null);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarView, setRightSidebarView] =
     useState<RightSidebarView>("summary");
@@ -75,9 +79,25 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
     selectInspector(inspectorId);
   }
 
+  function handleSelectSection(sectionId: string) {
+    setActiveSectionId(sectionId);
+    setActiveClauseId(null);
+    setRightSidebarOpen(true);
+    setRightSidebarView("summary");
+  }
+
+  function handleSelectClause(clauseId: string, sectionId: string) {
+    setActiveClauseId(clauseId);
+    setActiveSectionId(sectionId);
+    setRightSidebarOpen(true);
+    setRightSidebarView("clause");
+  }
+
   function showContractSummary() {
     setRightSidebarView("summary");
     setInspectorHistory([]);
+    setActiveClauseId(null);
+    setActiveSectionId(null);
   }
 
   function showPreviousInspector() {
@@ -116,8 +136,12 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
         }`}
       >
         <Sidebar
+          activeClauseId={activeClauseId}
+          activeSectionId={activeSectionId}
           analysis={analysis}
           contractFileName={uploadedFileName ?? analysis.contract.fileName}
+          onSelectClause={handleSelectClause}
+          onSelectSection={handleSelectSection}
           reviewerRoleLabel={roleLabels[reviewerRole]}
         />
         <section className="flex min-w-0 flex-col">
@@ -125,8 +149,12 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
             <TopBar contract={analysis.contract} />
           </div>
           <DashboardMain
+            activeClauseId={activeClauseId}
+            activeSectionId={activeSectionId}
             analysis={analysis}
+            onSelectClause={handleSelectClause}
             onSelectInspector={handleSelectInspector}
+            onSelectSection={handleSelectSection}
             selectedInspector={selectedInspector}
             selectedNodeId={selectedNodeId}
           />
@@ -134,12 +162,14 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
         <RightSidebar
           activeInspectorTab={activeInspectorTab}
           canGoBack={inspectorHistory.length > 0}
+          clauseSelection={findContractClause(activeClauseId)}
           contractType={analysis.contract.contractType}
           inspectorOpen={inspectorOpen}
           isOpen={rightSidebarOpen}
           onBack={showPreviousInspector}
           onShowSummary={showContractSummary}
           selectedInspector={selectedInspector}
+          selectedSection={findContractSection(activeSectionId)}
           setActiveInspectorTab={setActiveInspectorTab}
           setInspectorOpen={setInspectorOpen}
           setIsOpen={setRightSidebarOpen}
@@ -153,12 +183,14 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
 function RightSidebar({
   activeInspectorTab,
   canGoBack,
+  clauseSelection,
   contractType,
   inspectorOpen,
   isOpen,
   onBack,
   onShowSummary,
   selectedInspector,
+  selectedSection,
   setActiveInspectorTab,
   setInspectorOpen,
   setIsOpen,
@@ -166,12 +198,14 @@ function RightSidebar({
 }: {
   activeInspectorTab: Parameters<typeof ClauseInspector>[0]["activeTab"];
   canGoBack: boolean;
+  clauseSelection: ReturnType<typeof findContractClause>;
   contractType: string;
   inspectorOpen: boolean;
   isOpen: boolean;
   onBack: () => void;
   onShowSummary: () => void;
   selectedInspector: Parameters<typeof ClauseInspector>[0]["inspector"];
+  selectedSection: ReturnType<typeof findContractSection>;
   setActiveInspectorTab: Parameters<typeof ClauseInspector>[0]["onTabChange"];
   setInspectorOpen: (open: boolean) => void;
   setIsOpen: (open: boolean) => void;
@@ -226,7 +260,16 @@ function RightSidebar({
         </div>
       </div>
       {view === "summary" ? (
-        <ContractBrief contractType={contractType} />
+        <ContractBrief
+          contractType={contractType}
+          selectedSection={selectedSection}
+        />
+      ) : null}
+      {view === "clause" && clauseSelection ? (
+        <ClauseRiskPanel
+          clause={clauseSelection.clause}
+          sectionLabel={clauseSelection.section.label}
+        />
       ) : null}
       {view === "inspector" && inspectorOpen ? (
         <ClauseInspector
@@ -249,15 +292,22 @@ function RightSidebar({
   );
 }
 
-function ContractBrief({ contractType }: { contractType: string }) {
+function ContractBrief({
+  contractType,
+  selectedSection,
+}: {
+  contractType: string;
+  selectedSection: ReturnType<typeof findContractSection>;
+}) {
   return (
     <section className="rounded-md border border-border bg-background/55 p-4">
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        This contract in short
+        {selectedSection ? `${selectedSection.label} in short` : "This contract in short"}
       </p>
       <p className="mt-3 text-sm font-medium leading-6">
-        This {contractType.toLowerCase()} mainly governs software services,
-        payments, confidentiality, and termination.
+        {selectedSection
+          ? `${selectedSection.label} carries ${selectedSection.risk.toLowerCase()} risk and includes ${selectedSection.count} clauses that should be reviewed together.`
+          : `This ${contractType.toLowerCase()} mainly governs software services, payments, confidentiality, and termination.`}
       </p>
 
       <p className="mt-5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
@@ -277,6 +327,38 @@ function ContractBrief({ contractType }: { contractType: string }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+function ClauseRiskPanel({
+  clause,
+  sectionLabel,
+}: {
+  clause: NonNullable<ReturnType<typeof findContractClause>>["clause"];
+  sectionLabel: string;
+}) {
+  return (
+    <section className="rounded-md border border-border bg-background/55 p-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Clause risk factors
+      </p>
+      <h2 className="mt-3 text-base font-semibold">{clause.label}</h2>
+      <p className="mt-1 text-xs text-muted-foreground">{sectionLabel}</p>
+      <Badge className="mt-4" tone={clause.risk === "High" ? "danger" : "warning"}>
+        {clause.risk} risk
+      </Badge>
+      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+        {clause.summary}
+      </p>
+      <div className="mt-5 rounded-md border border-border bg-surface/80 p-3">
+        <p className="text-sm font-medium">Should you sign?</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          You can proceed only after confirming this clause matches your
+          commercial position and the connected sections do not create hidden
+          downstream exposure.
+        </p>
+      </div>
     </section>
   );
 }

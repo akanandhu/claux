@@ -45,7 +45,11 @@ const dashboardMetrics: DemoMetric[] = [
 ] as const;
 
 export function DashboardMain({
+  activeClauseId,
+  activeSectionId,
+  onSelectClause,
   onSelectInspector,
+  onSelectSection,
   selectedInspector,
 }: DashboardMainProps) {
   return (
@@ -55,7 +59,11 @@ export function DashboardMain({
         metricTone={metricTone}
       />
       <ClauseVisualiser
+        activeClauseId={activeClauseId}
+        activeSectionId={activeSectionId}
+        onSelectClause={onSelectClause}
         onSelectInspector={onSelectInspector}
+        onSelectSection={onSelectSection}
         selectedInspector={selectedInspector}
       />
       <PlainEnglishExplanation inspector={selectedInspector} />
