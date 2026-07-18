@@ -207,7 +207,7 @@ export function ClauseVisualiser({
 function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
   return (
     <div
-      className={`min-w-48 rounded-md border bg-surface px-4 py-3 shadow-xl shadow-black/15 ${sectionToneClass[data.tone]}`}
+      className={`h-24 w-56 overflow-hidden rounded-md border bg-surface px-4 py-3 shadow-xl shadow-black/15 ${sectionToneClass[data.tone]}`}
     >
       <Handle
         className="!size-0 !border-0 !bg-transparent !opacity-0"
@@ -235,10 +235,12 @@ function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
             <BookOpenText aria-hidden="true" className="size-4" />
           )}
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold">{data.label}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{data.clauses}</p>
-          <p className="mt-1 text-xs font-medium">{data.risk}</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{data.label}</p>
+          <p className="mt-1 overflow-hidden text-xs text-muted-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+            {data.clauses}
+          </p>
+          <p className="mt-1 truncate text-xs font-medium">{data.risk}</p>
         </div>
       </div>
       <Handle
