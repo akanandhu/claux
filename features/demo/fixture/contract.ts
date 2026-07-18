@@ -9,6 +9,15 @@ export const contract: DemoAnalysisFixture["contract"] = {
   fileName: "Acme Cloud Services Agreement.pdf",
   contractType: "SaaS services agreement",
   reviewingRole: "Customer",
+  reviewerConfidence: 0.82,
+  requiresPartyClarification: false,
+  counterpartyGlance: [
+    {
+      partyName: "Provider",
+      summary: "Counterparty glance only; full directional review is framed for Customer.",
+      confidence: 0.8,
+    },
+  ],
   effectiveDate: "2026-07-01",
   pageCount: 18,
   clauseCount: 42,
@@ -70,6 +79,7 @@ export const topFindings: DemoFinding[] = [
     summary: "Service credits and damages appear connected to the same recovery limit.",
     clauseRefs: ["7.4", "11.2"],
     confidence: 0.81,
+    validationStatus: "VERIFIED",
   },
   {
     id: "finding-cure",
@@ -79,6 +89,7 @@ export const topFindings: DemoFinding[] = [
     summary: "The remedy can be traced, but the path crosses payment, notice, and breach sections.",
     clauseRefs: ["4.1", "9.3"],
     confidence: 0.8,
+    validationStatus: "VERIFIED",
   },
   {
     id: "finding-context",
@@ -88,5 +99,6 @@ export const topFindings: DemoFinding[] = [
     summary: "The fixture does not include jurisdiction context for legal-review checks.",
     clauseRefs: ["Metadata"],
     confidence: 0.72,
+    validationStatus: "NEEDS_REVIEW",
   },
 ];

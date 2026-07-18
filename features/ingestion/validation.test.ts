@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { IngestionError } from "./errors.ts";
+import { INGESTION_ERROR_CODES, IngestionError } from "./errors.ts";
 import {
   maxUploadBytes,
   validateContractLikeText,
@@ -19,6 +19,11 @@ test("validateUploadFile accepts supported PDF, DOCX, and TXT uploads", () => {
     "docx",
   );
   assert.equal(validateUploadFile({ name: "deal.txt", size: 1024, type: "text/plain" }), "txt");
+});
+
+test("INGESTION_ERROR_CODES is the reusable error-code source of truth", () => {
+  assert.equal(INGESTION_ERROR_CODES.includes("unsupported_file"), true);
+  assert.equal(INGESTION_ERROR_CODES.includes("no_clauses"), true);
 });
 
 test("validateUploadFile rejects unsupported, empty, and oversized files", () => {

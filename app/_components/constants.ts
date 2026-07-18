@@ -1,7 +1,5 @@
 import type {
   DemoFinding,
-  DemoGraphEdge,
-  DemoGraphNode,
   DemoMetric,
   PresentationLabel,
 } from "@/features/demo/types";
@@ -40,30 +38,3 @@ export const labelClass: Record<PresentationLabel, string> = {
   NEGOTIATION_SUGGESTION: "border-ai-accent/30 bg-ai-accent/10 text-ai-accent",
   UNCERTAIN: "border-border bg-surface-raised text-muted-foreground",
 };
-
-export const graphNodeTone: Partial<
-  Record<DemoGraphNode["type"], { fill: string; stroke: string; text: string }>
-> = {
-  CLAUSE: { fill: "#2563eb", stroke: "#93c5fd", text: "#dbeafe" },
-  OBLIGATION: { fill: "#7c3aed", stroke: "#c4b5fd", text: "#ede9fe" },
-  RIGHT: { fill: "#22c55e", stroke: "#86efac", text: "#dcfce7" },
-  CONDITION: { fill: "#f59e0b", stroke: "#fcd34d", text: "#fef3c7" },
-  PARTY: { fill: "#14b8a6", stroke: "#5eead4", text: "#ccfbf1" },
-  FINDING: { fill: "#ef4444", stroke: "#fca5a5", text: "#fee2e2" },
-  CONTRACT: { fill: "#1f2937", stroke: "#94a3b8", text: "#f8fafc" },
-};
-
-export const graphLegend = [
-  { label: "Clause", color: "#2563eb" },
-  { label: "Obligation", color: "#7c3aed" },
-  { label: "Right", color: "#22c55e" },
-  { label: "Condition", color: "#f59e0b" },
-  { label: "Party", color: "#14b8a6" },
-  { label: "Risk", color: "#ef4444" },
-];
-
-export function edgeColor(pathType: DemoGraphEdge["pathType"]) {
-  if (pathType === "risk") return "#f87171";
-  if (pathType === "reference") return "#94a3b8";
-  return "#60a5fa";
-}

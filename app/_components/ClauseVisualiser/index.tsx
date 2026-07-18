@@ -3,65 +3,29 @@
 import {
   Background,
   Controls,
-  Handle,
-  MarkerType,
-  Position,
   ReactFlow,
   type Edge,
   type Node,
-  type NodeProps,
 } from "@xyflow/react";
-import {
-  AlertTriangle,
-  BookOpenText,
-  CheckCircle2,
-  GitBranch,
-  ShieldAlert,
-} from "lucide-react";
+import { GitBranch } from "lucide-react";
 import { useMemo } from "react";
 
 import { Badge } from "@/components/Badge";
-import {
-  contractOutline,
-  findContractClause,
-  findContractSection,
-} from "../contractOutline";
-import {
-  branchBottomY,
-  branchGap,
-  branchRootY,
-  branchTopY,
-  hierarchyPositions,
-  hierarchyEdges,
-  resolveNodeCollisions,
-} from "./layout";
-import type { ClauseVisualiserProps } from "./types";
-
-type FlowTone = "neutral" | "success" | "warning" | "danger" | "accent";
-
-type FlowNodeData = {
-  clauses: string;
-  label: string;
-  risk: string;
-  tone: FlowTone;
-};
-
-const sectionToneClass: Record<FlowTone, string> = {
-  accent: "border-ai-accent/45 text-ai-accent",
-  danger: "border-danger/45 text-danger",
-  neutral: "border-border text-muted-foreground",
-  success: "border-success/45 text-success",
-  warning: "border-warning/45 text-warning",
-};
+import { findContractClause, findContractSection } from "@/features/demo/utils";
+import { ClauseFlowNode } from "../ClauseFlowNode";
+import { hierarchyEdges } from "./layout";
+import type { ClauseVisualiserProps, FlowNodeData } from "./types";
+import { clauseFlowEdges, clauseFlowNodes, hierarchyNodes, riskTone } from "./utils";
 
 export function ClauseVisualiser({
   activeClauseId,
   activeSectionId,
   onSelectClause,
   onSelectSection,
+  outline,
 }: ClauseVisualiserProps) {
-  const selectedSection = findContractSection(activeSectionId);
-  const selectedClause = findContractClause(activeClauseId);
+  const selectedSection = findContractSection(activeSectionId, outline);
+  const selectedClause = findContractClause(activeClauseId, outline);
 
   const nodes = useMemo<Node<FlowNodeData>[]>(() => {
     if (selectedClause) {
@@ -107,7 +71,7 @@ export function ClauseVisualiser({
         position: { x: 0, y: 0 },
         type: "section",
       },
-      contractOutline.map((section) => ({
+      outline.map((section) => ({
         data: {
           clauses: `${section.count} clauses`,
           label: section.label,
@@ -119,11 +83,11 @@ export function ClauseVisualiser({
         type: "section",
       })),
     );
-  }, [selectedClause, selectedSection]);
+  }, [outline, selectedClause, selectedSection]);
 
   const edges = useMemo<Edge[]>(() => {
     if (selectedClause) {
-      return clauseFlowEdges(selectedClause.clause.id);
+      return clauseFlowEdges(selectedClause);
     }
 
     if (selectedSection) {
@@ -135,9 +99,9 @@ export function ClauseVisualiser({
 
     return hierarchyEdges(
       "agreement",
-      contractOutline.map((section) => section.id),
+      outline.map((section) => section.id),
     );
-  }, [selectedClause, selectedSection]);
+  }, [outline, selectedClause, selectedSection]);
 
   const visualiserTitle =
     selectedClause?.clause.label ??
@@ -171,14 +135,14 @@ export function ClauseVisualiser({
           fitView
           fitViewOptions={{ padding: 0.22 }}
           key={`${activeSectionId ?? "contract"}-${activeClauseId ?? "all"}`}
-          nodeTypes={{ section: FlowNode }}
+          nodeTypes={{ section: ClauseFlowNode }}
           nodes={nodes}
           nodesConnectable={false}
           nodesDraggable={false}
           nodesFocusable
           onNodeClick={(_, node) => {
-            const section = findContractSection(node.id);
-            const clause = findContractClause(node.id);
+            const section = findContractSection(node.id, outline);
+            const clause = findContractClause(node.id, outline);
 
             if (section) {
               onSelectSection(section.id);
@@ -202,167 +166,4 @@ export function ClauseVisualiser({
       </div>
     </section>
   );
-}
-
-function FlowNode({ data }: NodeProps<Node<FlowNodeData>>) {
-  return (
-    <div
-      className={`h-24 w-56 overflow-hidden rounded-md border bg-surface px-4 py-3 shadow-xl shadow-black/15 ${sectionToneClass[data.tone]}`}
-    >
-      <Handle
-        className="!size-0 !border-0 !bg-transparent !opacity-0"
-        id="top"
-        isConnectable={false}
-        position={Position.Top}
-        type="target"
-      />
-      <Handle
-        className="!size-0 !border-0 !bg-transparent !opacity-0"
-        id="top"
-        isConnectable={false}
-        position={Position.Top}
-        type="source"
-      />
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm border border-current/30 bg-background/55">
-          {data.tone === "danger" ? (
-            <ShieldAlert aria-hidden="true" className="size-4" />
-          ) : data.tone === "success" ? (
-            <CheckCircle2 aria-hidden="true" className="size-4" />
-          ) : data.tone === "warning" ? (
-            <AlertTriangle aria-hidden="true" className="size-4" />
-          ) : (
-            <BookOpenText aria-hidden="true" className="size-4" />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{data.label}</p>
-          <p className="mt-1 overflow-hidden text-xs text-muted-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-            {data.clauses}
-          </p>
-          <p className="mt-1 truncate text-xs font-medium">{data.risk}</p>
-        </div>
-      </div>
-      <Handle
-        className="!size-0 !border-0 !bg-transparent !opacity-0"
-        id="bottom"
-        isConnectable={false}
-        position={Position.Bottom}
-        type="source"
-      />
-      <Handle
-        className="!size-0 !border-0 !bg-transparent !opacity-0"
-        id="bottom"
-        isConnectable={false}
-        position={Position.Bottom}
-        type="target"
-      />
-    </div>
-  );
-}
-
-function hierarchyNodes(
-  root: Node<FlowNodeData>,
-  children: Node<FlowNodeData>[],
-) {
-  const positions = hierarchyPositions(children.length);
-
-  return resolveNodeCollisions([
-    {
-      ...root,
-      position: { x: positions.rootX, y: positions.rootY },
-    },
-    ...children.map((child, index) => ({
-      ...child,
-      position: positions.children[index]!,
-    })),
-  ]);
-}
-
-function riskTone(risk: "Low" | "Medium" | "High"): FlowTone {
-  if (risk === "High") return "danger";
-  if (risk === "Medium") return "warning";
-  return "success";
-}
-
-function clauseFlowNodes(
-  selection: NonNullable<ReturnType<typeof findContractClause>>,
-): Node<FlowNodeData>[] {
-  const { clause, section } = selection;
-
-  return resolveNodeCollisions([
-    {
-      data: {
-        clauses: `${section.count} clauses`,
-        label: section.label,
-        risk: `${section.risk} risk section`,
-        tone: riskTone(section.risk),
-      },
-      id: section.id,
-      position: { x: branchGap, y: branchTopY },
-      type: "section",
-    },
-    {
-      data: {
-        clauses: clause.summary,
-        label: clause.label,
-        risk: `${clause.risk} risk clause`,
-        tone: riskTone(clause.risk),
-      },
-      id: clause.id,
-      position: { x: branchGap, y: branchRootY },
-      type: "section",
-    },
-    {
-      data: {
-        clauses: "Review the commercial effect before signing.",
-        label: "Risk factor",
-        risk: `${clause.risk} priority`,
-        tone: riskTone(clause.risk),
-      },
-      id: `${clause.id}-risk`,
-      position: { x: 0, y: branchBottomY },
-      type: "section",
-    },
-    {
-      data: {
-        clauses: "Confirm the clause matches your role and the connected terms.",
-        label: "Before signing",
-        risk: "Action",
-        tone: "neutral",
-      },
-      id: `${clause.id}-action`,
-      position: { x: branchGap * 2, y: branchBottomY },
-      type: "section",
-    },
-  ]);
-}
-
-function clauseFlowEdges(clauseId: string): Edge[] {
-  return [
-    {
-      animated: true,
-      id: `section-${clauseId}`,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      source: findContractClause(clauseId)!.section.id,
-      target: clauseId,
-      type: "smoothstep",
-    },
-    {
-      animated: true,
-      id: `${clauseId}-risk`,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      source: clauseId,
-      target: `${clauseId}-risk`,
-      type: "smoothstep",
-    },
-    {
-      animated: true,
-      id: `${clauseId}-action`,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      source: `${clauseId}-risk`,
-      target: `${clauseId}-action`,
-      type: "smoothstep",
-    },
-  ];
 }

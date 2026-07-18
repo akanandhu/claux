@@ -184,6 +184,12 @@ export function toDemoFindings(
       return clause?.number ?? clause?.title ?? clauseId;
     }),
     confidence: finding.confidence,
+    validationStatus:
+      finding.validationStatus === "VERIFIED"
+        ? "VERIFIED"
+        : finding.validationStatus === "PARTIALLY_VERIFIED"
+          ? "PARTIALLY_VERIFIED"
+          : "NEEDS_REVIEW",
   }));
 }
 

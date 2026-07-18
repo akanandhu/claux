@@ -1,28 +1,39 @@
-import type { ParsedDocument, ReviewerContext } from "../../schemas/contract.ts";
+import type {
+  AiExtractionOutput,
+  AnalyzeResponse,
+  ParsedDocument,
+  ReviewerContext,
+} from "../../schemas/contract.ts";
 import type { ContractClause } from "../../schemas/contract.ts";
 import type {
   DemoAnalysisFixture,
   DemoEvidence,
-  DemoGraphEdge,
-  DemoGraphNode,
   DemoInspector,
+  DemoOutlineSection,
 } from "../demo/types";
 import {
   buildDeterministicExtraction,
   buildMetrics,
   toDemoFindings,
 } from "./deterministic.ts";
+import { validateEvidenceAgainstClauses } from "./evidence.ts";
+
+type LiveAnalysisResult = AiExtractionOutput | AnalyzeResponse;
 
 export function buildLiveAnalysisFixture({
   clauses,
   document,
+  analysisResult,
   reviewerContext,
 }: {
   clauses: ContractClause[];
   document: ParsedDocument;
+  analysisResult?: LiveAnalysisResult;
   reviewerContext: ReviewerContext;
 }): DemoAnalysisFixture {
-  const extraction = buildDeterministicExtraction(clauses, reviewerContext);
+  const extraction = analysisResult
+    ? gateExtractionClientSide(analysisResult, clauses)
+    : buildDeterministicExtraction(clauses, reviewerContext);
   const metrics = buildMetrics({
     clauses,
     evidence: extraction.evidence,
@@ -54,7 +65,23 @@ export function buildLiveAnalysisFixture({
     contract: {
       fileName: document.fileName,
       contractType: inferContractType(clauses),
-      reviewingRole: reviewerContext.reviewingPartyName ?? "Unconfirmed reviewer",
+      reviewingRole: reviewingRoleLabel(analysisResult, reviewerContext),
+      reviewerConfidence:
+        analysisResult && "inferenceConfidence" in analysisResult
+          ? analysisResult.inferenceConfidence
+          : undefined,
+      requiresPartyClarification:
+        analysisResult && "requiresClarification" in analysisResult
+          ? analysisResult.requiresClarification
+          : undefined,
+      counterpartyGlance:
+        analysisResult && "counterpartyGlance" in analysisResult
+          ? analysisResult.counterpartyGlance.map((party) => ({
+              partyName: party.partyName,
+              summary: party.summary,
+              confidence: party.confidence,
+            }))
+          : undefined,
       effectiveDate: "Not detected",
       pageCount: document.pageCount ?? document.pages.length,
       clauseCount: clauses.length,
@@ -69,16 +96,64 @@ export function buildLiveAnalysisFixture({
       { id: "evidence", label: "Evidence links", count: extraction.evidence.length },
     ],
     metrics,
-    graph: graphForClauses(clauses, extraction.findings),
     defaultInspectorId: inspectors[0]?.id ?? "contract-summary",
     inspectors:
       inspectors.length > 0 ? inspectors : [emptyInspector(document.fileName)],
-    executiveSummary: buildExecutiveSummary(
-      clauses.length,
-      extraction.findings.length,
-      reviewerContext,
-    ),
+    executiveSummary:
+      analysisSummaries(analysisResult).length
+        ? analysisSummaries(analysisResult)
+        : buildExecutiveSummary(clauses.length, extraction.findings.length, reviewerContext),
+    outline: outlineForClauses(clauses, extraction.findings),
     topFindings: toDemoFindings(extraction.findings, clauses),
+  };
+}
+
+function reviewingRoleLabel(
+  analysisResult: LiveAnalysisResult | undefined,
+  reviewerContext: ReviewerContext,
+) {
+  if (analysisResult && "inferredReviewingParty" in analysisResult) {
+    return (
+      analysisResult.inferredReviewingParty?.role ??
+      analysisResult.inferredReviewingParty?.name ??
+      reviewerContext.reviewingPartyName ??
+      "Inferred reviewer"
+    );
+  }
+
+  return reviewerContext.reviewingPartyName ?? "Inferred reviewer";
+}
+
+function analysisSummaries(analysisResult: LiveAnalysisResult | undefined) {
+  if (analysisResult && "summaries" in analysisResult) {
+    return analysisResult.summaries;
+  }
+
+  return [];
+}
+
+function gateExtractionClientSide(
+  extraction: AiExtractionOutput,
+  clauses: ContractClause[],
+): AiExtractionOutput {
+  const evidence = validateEvidenceAgainstClauses(extraction.evidence, clauses);
+  const evidenceById = new Map(evidence.map((item) => [item.id, item]));
+
+  return {
+    ...extraction,
+    evidence,
+    findings: extraction.findings.map((finding) => {
+      const verified =
+        finding.evidenceIds.length > 0 &&
+        finding.evidenceIds.every(
+          (evidenceId) => evidenceById.get(evidenceId)?.validationStatus === "VERIFIED",
+        );
+
+      return {
+        ...finding,
+        validationStatus: verified ? "VERIFIED" : "NEEDS_REVIEW",
+      };
+    }),
   };
 }
 
@@ -142,56 +217,6 @@ function inspectorForClause({
   };
 }
 
-function graphForClauses(
-  clauses: ContractClause[],
-  findings: ReturnType<typeof buildDeterministicExtraction>["findings"],
-) {
-  const nodes: DemoGraphNode[] = [
-    { id: "contract", label: "Contract", type: "CONTRACT", x: 80, y: 120, size: 52 },
-    ...clauses.slice(0, 8).map((clause, index) => ({
-      id: clause.id,
-      label: clause.number ? `${clause.number} ${clause.title ?? "Clause"}` : clause.title ?? `Clause ${index + 1}`,
-      type: "CLAUSE" as const,
-      x: 250 + (index % 4) * 150,
-      y: 60 + Math.floor(index / 4) * 130,
-      size: 42,
-      inspectorId: `inspector-${clause.id}`,
-    })),
-    ...findings.slice(0, 4).map((finding, index) => ({
-      id: finding.id,
-      label: finding.title,
-      type: "FINDING" as const,
-      x: 860,
-      y: 70 + index * 110,
-      size: 44,
-    })),
-  ];
-  const edges: DemoGraphEdge[] = clauses.slice(0, 8).map((clause) => ({
-    id: `contract-${clause.id}`,
-    source: "contract",
-    target: clause.id,
-    type: "CONTAINS",
-    confidence: 0.9,
-    pathType: "dependency",
-  }));
-
-  for (const finding of findings.slice(0, 4)) {
-    const clauseId = finding.clauseIds[0];
-    if (!clauseId) continue;
-    edges.push({
-      id: `${clauseId}-${finding.id}`,
-      source: clauseId,
-      target: finding.id,
-      type: "SUPPORTED_BY",
-      confidence: finding.confidence,
-      pathType: finding.severity === "HIGH" ? "risk" : "reference",
-      dashed: finding.validationStatus !== "VERIFIED",
-    });
-  }
-
-  return { nodes, edges };
-}
-
 function emptyInspector(fileName: string): DemoInspector {
   return {
     id: "contract-summary",
@@ -220,6 +245,77 @@ function inferContractType(clauses: ContractClause[]) {
   }
   if (/\blemployment|employee\b/i.test(text)) return "Employment agreement";
   return "Contract";
+}
+
+function outlineForClauses(
+  clauses: ContractClause[],
+  findings: ReturnType<typeof buildDeterministicExtraction>["findings"],
+): DemoOutlineSection[] {
+  const findingByClauseId = new Map(
+    findings.flatMap((finding) =>
+      finding.clauseIds.map((clauseId) => [clauseId, finding] as const),
+    ),
+  );
+  const groups = new Map<string, ContractClause[]>();
+
+  for (const clause of clauses) {
+    const groupKey = clause.number?.split(".")[0] ?? "unclassified";
+    groups.set(groupKey, [...(groups.get(groupKey) ?? []), clause]);
+  }
+
+  return [...groups.entries()].map(([groupKey, groupClauses], index) => {
+    const sectionRisk = highestRisk(
+      groupClauses.map(
+        (clause) => severityToRisk(findingByClauseId.get(clause.id)?.severity),
+      ),
+    );
+    const firstClause = groupClauses[0]!;
+    const hazards = groupClauses
+      .map((clause) => findingByClauseId.get(clause.id)?.title)
+      .filter((title): title is string => Boolean(title));
+
+    return {
+      id: `section-${groupKey}`,
+      label:
+        firstClause.title && groupClauses.length === 1
+          ? firstClause.title
+          : groupKey === "unclassified"
+            ? `Extracted clauses ${index + 1}`
+            : `Section ${groupKey}`,
+      count: groupClauses.length,
+      risk: sectionRisk,
+      plainEnglishSummary: `${groupClauses.length} extracted clause${
+        groupClauses.length === 1 ? "" : "s"
+      } grouped from the source document.`,
+      hazards:
+        hazards.length > 0
+          ? hazards
+          : ["No verified commercial-risk finding was attached to this section."],
+      signGuidance:
+        "Directional signing or sending guidance is only shown after the reviewing party is confirmed.",
+      children: groupClauses.map((clause, clauseIndex) => ({
+        id: clause.id,
+        label:
+          clause.number && clause.title
+            ? `${clause.number} ${clause.title}`
+            : clause.title ?? `Clause ${clauseIndex + 1}`,
+        risk: severityToRisk(findingByClauseId.get(clause.id)?.severity),
+        summary: findingByClauseId.get(clause.id)?.summary ?? clause.text.slice(0, 180),
+      })),
+    };
+  });
+}
+
+function severityToRisk(severity?: string): "Low" | "Medium" | "High" {
+  if (severity === "HIGH" || severity === "CRITICAL") return "High";
+  if (severity === "MEDIUM") return "Medium";
+  return "Low";
+}
+
+function highestRisk(risks: Array<"Low" | "Medium" | "High">) {
+  if (risks.includes("High")) return "High";
+  if (risks.includes("Medium")) return "Medium";
+  return "Low";
 }
 
 function countMatches(clauses: ContractClause[], pattern: RegExp) {

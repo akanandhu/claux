@@ -5,12 +5,13 @@ import {
   TooltipTrigger,
 } from "@/components/Tooltip";
 import { CircleHelp } from "lucide-react";
-import { DashboardMetricsPropsI } from "./types";
+import { metricHelpText } from "./constants";
+import type { DashboardMetricsProps } from "./types";
 
-const DashboardMetrics = ({
+export function DashboardMetrics({
   dashboardMetrics,
   metricTone,
-}: DashboardMetricsPropsI) => {
+}: DashboardMetricsProps) {
   return (
     <TooltipProvider delayDuration={120}>
       <section
@@ -31,7 +32,7 @@ const DashboardMetrics = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    aria-label={`${metric.label}: ${metric.question}`}
+                    aria-label={`${metric.label}: ${metricHelpText[metric.id]?.question ?? "Metric details"}`}
                     className="hidden size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition hover:border-primary/45 hover:bg-surface-raised hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-primary lg:inline-flex"
                     type="button"
                   >
@@ -40,9 +41,11 @@ const DashboardMetrics = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="font-medium text-foreground">
-                    {metric.question}
+                    {metricHelpText[metric.id]?.question ?? metric.label}
                   </p>
-                  <p className="mt-1 text-muted-foreground">{metric.tip}</p>
+                  <p className="mt-1 text-muted-foreground">
+                    {metricHelpText[metric.id]?.tip ?? metric.detail}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -57,6 +60,4 @@ const DashboardMetrics = ({
       </section>
     </TooltipProvider>
   );
-};
-
-export default DashboardMetrics;
+}

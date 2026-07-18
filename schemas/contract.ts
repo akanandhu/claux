@@ -71,6 +71,12 @@ export const partySchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
+export const reviewerResolutionSchema = z.enum([
+  "resolved",
+  "requires_confirmation",
+  "unresolved",
+]);
+
 export const reviewerContextSchema = z.object({
   relationship: z.enum(["received", "prepared"]),
   reviewingPartyId: z.string().optional(),
@@ -85,6 +91,16 @@ export const evidenceSchema = z.object({
   normalizedText: z.string().min(1),
   sourceSpanIds: z.array(z.string()).default([]),
   validationStatus: validationStatusSchema,
+});
+
+export const partyImpactSchema = z.object({
+  partyId: z.string().optional(),
+  partyName: z.string().min(1),
+  affectedParty: z.string().optional(),
+  benefitingParty: z.string().optional(),
+  impact: z.string().min(1),
+  severityAdjustment: z.enum(["lower", "same", "higher", "unknown"]).default("same"),
+  confidence: z.number().min(0).max(1),
 });
 
 export const aiExtractionOutputSchema = z.object({
@@ -192,12 +208,39 @@ export const suggestionSchema = z.object({
   validationStatus: validationStatusSchema,
 });
 
+export const counterpartyGlanceSchema = z.object({
+  partyId: z.string().optional(),
+  partyName: z.string().min(1),
+  role: z.string().optional(),
+  summary: z.string().min(1),
+  keyConcerns: z.array(z.string().min(1)).default([]),
+  confidence: z.number().min(0).max(1),
+});
+
+export const deepAnalysisForPartySchema = z.object({
+  partyId: z.string().optional(),
+  partyName: z.string().min(1),
+  perspective: z.enum(["recipient", "drafter", "unknown"]),
+  summary: z.string().min(1),
+  partyImpacts: z.array(partyImpactSchema).default([]),
+});
+
 export const analyzeRequestSchema = z.object({
   clauses: z.array(contractClauseSchema).min(1),
   reviewerContext: reviewerContextSchema,
 });
 
 export const analyzeResponseSchema = aiExtractionOutputSchema.extend({
+  identifiedParties: z.array(partySchema).default([]),
+  inferredReviewingParty: partySchema.optional(),
+  inferenceConfidence: z.number().min(0).max(1).default(0),
+  reviewerResolution: reviewerResolutionSchema.default("unresolved"),
+  requiresClarification: z.boolean().default(false),
+  candidateReviewingPartyIds: z.array(z.string()).default([]),
+  deepAnalysisForParty: deepAnalysisForPartySchema.optional(),
+  counterpartyGlance: z.array(counterpartyGlanceSchema).default([]),
+  summaries: z.array(z.string().min(1)).default([]),
+  suggestions: z.array(suggestionSchema).default([]),
   validationStatus: validationStatusSchema,
 });
 
@@ -220,6 +263,7 @@ export type SourceSpan = z.infer<typeof sourceSpanSchema>;
 export type ParsedDocument = z.infer<typeof parsedDocumentSchema>;
 export type ContractClause = z.infer<typeof contractClauseSchema>;
 export type Party = z.infer<typeof partySchema>;
+export type PartyImpact = z.infer<typeof partyImpactSchema>;
 export type ReviewerContext = z.infer<typeof reviewerContextSchema>;
 export type Evidence = z.infer<typeof evidenceSchema>;
 export type AiExtractionOutput = z.infer<typeof aiExtractionOutputSchema>;

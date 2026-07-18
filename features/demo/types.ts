@@ -9,7 +9,7 @@ export type PresentationLabel =
   | "NEGOTIATION_SUGGESTION"
   | "UNCERTAIN";
 
-export type GraphNodeType =
+export type DemoInspectorNodeType =
   | "CONTRACT"
   | "SECTION"
   | "CLAUSE"
@@ -25,19 +25,6 @@ export type GraphNodeType =
   | "FINDING"
   | "EVIDENCE";
 
-export type GraphEdgeType =
-  | "CONTAINS"
-  | "REFERENCES"
-  | "MENTIONS_PARTY"
-  | "ASSIGNED_TO"
-  | "GRANTS_RIGHT_TO"
-  | "DEPENDS_ON"
-  | "TRIGGERED_BY"
-  | "HAS_DEADLINE"
-  | "HAS_CONSEQUENCE"
-  | "SUPPORTED_BY"
-  | "AFFECTS";
-
 export type DemoMetric = {
   id: string;
   label: string;
@@ -50,26 +37,6 @@ export type DemoNavItem = {
   id: string;
   label: string;
   count: number;
-};
-
-export type DemoGraphNode = {
-  id: string;
-  label: string;
-  type: GraphNodeType;
-  x: number;
-  y: number;
-  size: number;
-  inspectorId?: string;
-};
-
-export type DemoGraphEdge = {
-  id: string;
-  source: string;
-  target: string;
-  type: GraphEdgeType;
-  confidence: number;
-  pathType: "dependency" | "reference" | "risk";
-  dashed?: boolean;
 };
 
 export type DemoEvidence = {
@@ -92,7 +59,7 @@ export type DemoInspector = {
   nodeId: string;
   clauseRef: string;
   title: string;
-  nodeType: GraphNodeType;
+  nodeType: DemoInspectorNodeType;
   severity?: FindingSeverity;
   confidence: number;
   labels: PresentationLabel[];
@@ -120,6 +87,7 @@ export type DemoFinding = {
   summary: string;
   clauseRefs: string[];
   confidence: number;
+  validationStatus: DemoEvidence["validationStatus"];
 };
 
 export type DemoAnalysisFixture = {
@@ -127,6 +95,13 @@ export type DemoAnalysisFixture = {
     fileName: string;
     contractType: string;
     reviewingRole: string;
+    reviewerConfidence?: number;
+    requiresPartyClarification?: boolean;
+    counterpartyGlance?: Array<{
+      partyName: string;
+      summary: string;
+      confidence: number;
+    }>;
     effectiveDate: string;
     pageCount: number;
     clauseCount: number;
@@ -134,12 +109,27 @@ export type DemoAnalysisFixture = {
   };
   navItems: DemoNavItem[];
   metrics: DemoMetric[];
-  graph: {
-    nodes: DemoGraphNode[];
-    edges: DemoGraphEdge[];
-  };
   defaultInspectorId: string;
   inspectors: DemoInspector[];
   executiveSummary: string[];
+  outline?: DemoOutlineSection[];
   topFindings: DemoFinding[];
+};
+
+export type DemoOutlineClause = {
+  id: string;
+  label: string;
+  risk: "Low" | "Medium" | "High";
+  summary: string;
+};
+
+export type DemoOutlineSection = {
+  children: DemoOutlineClause[];
+  count: number;
+  hazards: string[];
+  id: string;
+  label: string;
+  plainEnglishSummary: string;
+  risk: "Low" | "Medium" | "High";
+  signGuidance: string;
 };

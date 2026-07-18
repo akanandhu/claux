@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { ContractClause } from "../../schemas/contract.ts";
-import { buildDeterministicExtraction, buildMetrics } from "./deterministic.ts";
+import {
+  buildDeterministicExtraction,
+  buildMetrics,
+  toDemoFindings,
+} from "./deterministic.ts";
 import { validateEvidenceText } from "./evidence.ts";
 import { extractCandidateParties } from "./parties.ts";
 
@@ -62,6 +66,29 @@ test("buildMetrics computes explainability from verified evidence", () => {
   });
 
   assert.match(metrics.find((metric) => metric.id === "explainability")?.value ?? "", /%$/);
+});
+
+test("toDemoFindings carries evidence validation status into visible findings", () => {
+  const extraction = buildDeterministicExtraction(clauses, {
+    relationship: "received",
+    reviewingPartyId: "party-customer",
+    reviewingPartyName: "Customer",
+    status: "confirmed",
+  });
+  const demoFindings = toDemoFindings(extraction.findings, clauses);
+
+  assert.equal(
+    demoFindings.some((finding) => finding.validationStatus === "NEEDS_REVIEW"),
+    true,
+  );
+  assert.equal(
+    demoFindings.every((finding) =>
+      ["VERIFIED", "PARTIALLY_VERIFIED", "NEEDS_REVIEW"].includes(
+        finding.validationStatus,
+      ),
+    ),
+    true,
+  );
 });
 
 function clause(

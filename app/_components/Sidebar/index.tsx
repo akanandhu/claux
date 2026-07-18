@@ -10,7 +10,7 @@ import {
 
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
-import { contractOutline } from "../contractOutline";
+import { SidebarOverviewMetric } from "../SidebarOverviewMetric";
 import type { SidebarProps } from "./types";
 
 export function Sidebar({
@@ -20,6 +20,7 @@ export function Sidebar({
   contractFileName,
   onSelectClause,
   onSelectSection,
+  outline,
   reviewerRoleLabel,
 }: SidebarProps) {
   return (
@@ -76,7 +77,7 @@ export function Sidebar({
         className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
       >
         <ul className="space-y-1 pb-4">
-          {contractOutline.map((item, index) => (
+          {outline.map((item, index) => (
             <li key={item.label}>
               <button
                 aria-expanded={activeSectionId === item.id}
@@ -135,26 +136,20 @@ export function Sidebar({
       <footer className="mt-4 shrink-0 rounded-md border border-border bg-background/55 p-4 text-xs text-muted-foreground">
         <p className="font-medium text-foreground">Contract overview</p>
         <dl className="mt-4 grid grid-cols-3 gap-3">
-          <OverviewMetric label="Clauses" value={analysis.contract.clauseCount} />
-          <OverviewMetric
+          <SidebarOverviewMetric
+            label="Clauses"
+            value={analysis.contract.clauseCount}
+          />
+          <SidebarOverviewMetric
             label="Obligations"
             value={analysis.navItems.find((item) => item.id === "obligations")?.count ?? 0}
           />
-          <OverviewMetric
+          <SidebarOverviewMetric
             label="Risks"
             value={analysis.navItems.find((item) => item.id === "risks")?.count ?? 0}
           />
         </dl>
       </footer>
     </aside>
-  );
-}
-
-function OverviewMetric({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd className="mt-1 text-base font-semibold text-foreground">{value}</dd>
-    </div>
   );
 }
