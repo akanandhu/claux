@@ -120,7 +120,13 @@ const suggestionSchema = objectSchema({
   validationStatus: validationStatusSchema,
 });
 
+const contractMetadataSchema = objectSchema({
+  title: stringSchema,
+  contractType: stringSchema,
+});
+
 export const analyzeResponseOpenAiSchema = objectSchema({
+  contractMetadata: contractMetadataSchema,
   parties: arraySchema(partySchema),
   evidence: arraySchema(evidenceSchema),
   findings: arraySchema(findingSchema),

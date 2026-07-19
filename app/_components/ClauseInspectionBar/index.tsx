@@ -1,9 +1,12 @@
+"use client";
+
 import {
   ArrowLeft,
   PanelRightClose,
   PanelRightOpen,
   ScrollText,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/Button";
 import { ClauseInspector } from "../ClauseInspector";
@@ -34,6 +37,25 @@ export function ClauseInspectionBar({
   topFindings,
   view,
 }: ClauseInspectionBarProps) {
+  const scrollContainerRef = useRef<HTMLElement>(null);
+  const scrollTargetId =
+    view === "clause"
+      ? clauseSelection?.clause.id
+      : view === "section"
+        ? selectedSection?.id
+        : view === "inspector"
+          ? selectedInspector.id
+          : "summary";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    scrollContainerRef.current?.scrollTo({
+      left: 0,
+      top: 0,
+    });
+  }, [isOpen, scrollTargetId, view]);
+
   if (!isOpen) {
     return (
       <aside className="border-t border-border bg-surface/85 p-2 xl:sticky xl:top-0 xl:flex xl:h-screen xl:flex-col xl:items-center xl:border-l xl:border-t-0">
@@ -51,7 +73,10 @@ export function ClauseInspectionBar({
   }
 
   return (
-    <aside className="border-t border-border bg-surface/85 px-4 py-5 xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto xl:border-l xl:border-t-0 xl:px-5">
+    <aside
+      className="border-t border-border bg-surface/85 px-4 py-5 xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto xl:border-l xl:border-t-0 xl:px-5"
+      ref={scrollContainerRef}
+    >
       <div className="mb-5 flex items-center justify-between gap-3">
         <ClauseInspectionBarBreadcrumb
           clauseLabel={clauseSelection?.clause.label}

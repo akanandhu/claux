@@ -118,9 +118,32 @@ export function buildMetrics({
   const verifiedEvidence = evidence.filter(
     (item) => item.validationStatus === "VERIFIED",
   ).length;
-  const evidenceCoverage = evidence.length
-    ? Math.round((verifiedEvidence / evidence.length) * 100)
+  const verifiedEvidenceIds = new Set(
+    evidence
+      .filter((item) => item.validationStatus === "VERIFIED")
+      .map((item) => item.id),
+  );
+  const verifiedEvidenceClauseIds = new Set(
+    evidence
+      .filter((item) => item.validationStatus === "VERIFIED")
+      .map((item) => item.clauseId),
+  );
+  const verifiedFindings = findings.filter(
+    (finding) =>
+      finding.evidenceIds.length > 0 &&
+      finding.evidenceIds.every((evidenceId) =>
+        verifiedEvidenceIds.has(evidenceId),
+      ),
+  ).length;
+  const findingCoverage = findings.length ? verifiedFindings / findings.length : 0;
+  const clauseCoverage = clauses.length
+    ? verifiedEvidenceClauseIds.size / clauses.length
     : 0;
+  const evidenceQuality = evidence.length ? verifiedEvidence / evidence.length : 0;
+  const explainabilityScore = Math.round(
+    (findingCoverage * 0.5 + clauseCoverage * 0.3 + evidenceQuality * 0.2) *
+      100,
+  );
   const highFindings = findings.filter((finding) =>
     ["HIGH", "CRITICAL"].includes(finding.severity),
   ).length;
@@ -160,9 +183,12 @@ export function buildMetrics({
     metric(
       "explainability",
       "Explainability",
-      `${evidenceCoverage}%`,
-      `${verifiedEvidence} verified excerpts`,
-      evidenceCoverage >= 80 ? "accent" : "warning",
+      `${explainabilityScore}%`,
+      [
+        `${verifiedFindings}/${findings.length} findings verified`,
+        `${verifiedEvidenceClauseIds.size}/${clauses.length} clauses supported`,
+      ].join(", "),
+      explainabilityScore >= 80 ? "accent" : "warning",
     ),
   ];
 }

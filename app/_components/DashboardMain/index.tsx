@@ -18,7 +18,7 @@ export function DashboardMain({
   const activeSection = findContractSection(activeSectionId, outline);
 
   return (
-    <div className="flex-1 space-y-4 p-4 lg:p-5">
+    <div className="flex-1 space-y-3 p-3 lg:p-4">
       <DashboardMetrics
         dashboardMetrics={analysis.metrics}
         metricTone={metricTone}
@@ -26,6 +26,7 @@ export function DashboardMain({
       <ClauseVisualiser
         activeClauseId={activeClauseId}
         activeSectionId={activeSectionId}
+        contract={analysis.contract}
         onSelectClause={onSelectClause}
         onSelectSection={onSelectSection}
         outline={outline}

@@ -7,6 +7,7 @@ import type {
 
 export const contract: DemoAnalysisFixture["contract"] = {
   fileName: "Acme Cloud Services Agreement.pdf",
+  title: "Acme Cloud Services Agreement",
   contractType: "SaaS services agreement",
   reviewingRole: "Customer",
   reviewerConfidence: 0.82,

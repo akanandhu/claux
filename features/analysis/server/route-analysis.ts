@@ -137,6 +137,7 @@ async function callAnalyzeModel({
         content: [
           "You are Claux, a source-grounded contract analysis engine.",
           "Use only the supplied clause text. Never regenerate or rewrite source clauses.",
+          "Return contractMetadata.title as the best source-grounded agreement name or a concise generic title, and contractMetadata.contractType as the best detected agreement type.",
           "Extract all explicit legal parties and infer the single most likely party represented by the user from reviewerContext.relationship.",
           "If relationship is received, infer the likely recipient/offeree/counterparty side. If relationship is prepared, infer the likely drafter/originator/offeror side.",
           "Run deep risk, negotiation, and drafting-direction analysis only for the inferred reviewing party.",
@@ -201,6 +202,7 @@ function deterministicSingleCallAnalysis({
 
   return analyzeResponseSchema.parse({
     ...extraction,
+    contractMetadata: inferContractMetadata(clauses),
     identifiedParties,
     parties: identifiedParties,
     ...inference,
@@ -256,6 +258,49 @@ function deterministicSingleCallAnalysis({
       })),
     validationStatus: "VERIFIED",
   });
+}
+
+function inferContractMetadata(clauses: ContractClause[]) {
+  const titleClause = clauses.find(
+    (clause) =>
+      clause.title &&
+      /\bagreement|contract|terms|policy|statement|order\b/i.test(clause.title),
+  );
+  const headingClause = clauses.find(
+    (clause) =>
+      clause.text.length < 180 &&
+      /\bagreement|contract|terms|policy|statement|order\b/i.test(clause.text),
+  );
+  const text = clauses.map((clause) => clause.text).join("\n");
+  const contractType = inferContractType(text);
+
+  return {
+    title:
+      titleClause?.title ??
+      headingClause?.text.split(/\n/)[0]?.trim() ??
+      contractType,
+    contractType,
+  };
+}
+
+function inferContractType(text: string) {
+  if (/\bmaster services agreement|master service agreement|msa\b/i.test(text)) {
+    return "Master services agreement";
+  }
+  if (/\bnon-disclosure agreement|confidentiality agreement|nda\b/i.test(text)) {
+    return "NDA";
+  }
+  if (/\bstatement of work|sow\b/i.test(text)) {
+    return "Statement of work";
+  }
+  if (/\bservice|subscription|software|platform|saas\b/i.test(text)) {
+    return "Services agreement";
+  }
+  if (/\bemployment|employee\b/i.test(text)) {
+    return "Employment agreement";
+  }
+
+  return "Contract";
 }
 
 function normalizeInference({

@@ -20,6 +20,7 @@ import { clauseFlowEdges, clauseFlowNodes, hierarchyNodes, riskTone } from "./ut
 export function ClauseVisualiser({
   activeClauseId,
   activeSectionId,
+  contract,
   onSelectClause,
   onSelectSection,
   outline,
@@ -62,8 +63,8 @@ export function ClauseVisualiser({
     return hierarchyNodes(
       {
         data: {
-          clauses: "142 clauses",
-          label: "Master Service Agreement",
+          clauses: `${contract.clauseCount} clauses`,
+          label: contract.title,
           risk: "Full contract",
           tone: "neutral",
         },
@@ -83,7 +84,7 @@ export function ClauseVisualiser({
         type: "section",
       })),
     );
-  }, [outline, selectedClause, selectedSection]);
+  }, [contract.clauseCount, contract.title, outline, selectedClause, selectedSection]);
 
   const edges = useMemo<Edge[]>(() => {
     if (selectedClause) {
@@ -106,11 +107,11 @@ export function ClauseVisualiser({
   const visualiserTitle =
     selectedClause?.clause.label ??
     selectedSection?.label ??
-    "Master Service Agreement";
+    contract.title;
 
   return (
     <section className="overflow-hidden rounded-md border border-border bg-surface" id="overview">
-      <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-3 border-b border-border p-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-semibold">{visualiserTitle}</h2>
@@ -129,7 +130,7 @@ export function ClauseVisualiser({
         </div>
       </div>
 
-      <div className="h-[520px] border-t border-border bg-background">
+      <div className="h-[360px] border-t border-border bg-background lg:h-[420px]">
         <ReactFlow
           edges={edges}
           fitView

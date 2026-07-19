@@ -225,12 +225,18 @@ export const deepAnalysisForPartySchema = z.object({
   partyImpacts: z.array(partyImpactSchema).default([]),
 });
 
+export const contractMetadataSchema = z.object({
+  title: z.string().min(1),
+  contractType: z.string().min(1),
+});
+
 export const analyzeRequestSchema = z.object({
   clauses: z.array(contractClauseSchema).min(1),
   reviewerContext: reviewerContextSchema,
 });
 
 export const analyzeResponseSchema = aiExtractionOutputSchema.extend({
+  contractMetadata: contractMetadataSchema,
   identifiedParties: z.array(partySchema).default([]),
   inferredReviewingParty: partySchema.optional(),
   inferenceConfidence: z.number().min(0).max(1).default(0),
@@ -267,6 +273,7 @@ export type PartyImpact = z.infer<typeof partyImpactSchema>;
 export type ReviewerContext = z.infer<typeof reviewerContextSchema>;
 export type Evidence = z.infer<typeof evidenceSchema>;
 export type AiExtractionOutput = z.infer<typeof aiExtractionOutputSchema>;
+export type ContractMetadata = z.infer<typeof contractMetadataSchema>;
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;
 export type AnalyzeResponse = z.infer<typeof analyzeResponseSchema>;
 export type InterpretRequest = z.infer<typeof interpretRequestSchema>;

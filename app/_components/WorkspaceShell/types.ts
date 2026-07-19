@@ -18,6 +18,7 @@ export type JobStage =
   | "validating"
   | "extracting"
   | "segmenting"
+  | "submitting_analysis"
   | "analyzing"
   | "verifying"
   | "scoring"
@@ -31,5 +32,6 @@ export type LiveJob = {
   document: ParsedDocument | null;
   error: string | null;
   parties: Party[];
+  startedAt: number | null;
   stage: JobStage;
 };

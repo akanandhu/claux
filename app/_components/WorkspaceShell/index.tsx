@@ -17,6 +17,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
     return (
       <InitialUploadScreen
         error={workspace.job.error}
+        jobStartedAt={workspace.job.startedAt}
         jobStage={workspace.job.stage}
         onOpenDemo={workspace.openDemoWorkspace}
         onRoleChange={workspace.setReviewerRole}
@@ -43,6 +44,7 @@ export function WorkspaceShell({ analysis }: WorkspaceShellProps) {
           contractFileName={
             workspace.uploadedFileName ?? workspace.activeAnalysis.contract.fileName
           }
+          onClearWorkspace={workspace.clearWorkspace}
           onSelectClause={workspace.handleSelectClause}
           onSelectSection={workspace.handleSelectSection}
           outline={workspace.outline}

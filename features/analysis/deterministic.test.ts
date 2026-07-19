@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { ContractClause } from "../../schemas/contract.ts";
+import type {
+  AiExtractionOutput,
+  ContractClause,
+  Evidence,
+} from "../../schemas/contract.ts";
 import {
   buildDeterministicExtraction,
   buildMetrics,
@@ -68,6 +72,65 @@ test("buildMetrics computes explainability from verified evidence", () => {
   assert.match(metrics.find((metric) => metric.id === "explainability")?.value ?? "", /%$/);
 });
 
+test("buildMetrics gives full explainability for verified findings across all clauses", () => {
+  const metrics = buildMetrics({
+    clauses: clauses.slice(0, 2),
+    evidence: [
+      evidence("e1", "c1", "VERIFIED"),
+      evidence("e2", "c2", "VERIFIED"),
+    ],
+    findings: [
+      finding("f1", ["c1"], ["e1"], "VERIFIED"),
+      finding("f2", ["c2"], ["e2"], "VERIFIED"),
+    ],
+  });
+
+  assert.equal(metricValue(metrics, "explainability"), "100%");
+  assert.match(
+    metricDetail(metrics, "explainability"),
+    /2\/2 findings verified/,
+  );
+  assert.match(
+    metricDetail(metrics, "explainability"),
+    /2\/2 clauses supported/,
+  );
+});
+
+test("buildMetrics lowers explainability for unverified evidence and unsupported clauses", () => {
+  const metrics = buildMetrics({
+    clauses,
+    evidence: [
+      evidence("e1", "c1", "VERIFIED"),
+      evidence("e2", "c2", "NEEDS_REVIEW"),
+    ],
+    findings: [
+      finding("f1", ["c1"], ["e1"], "VERIFIED"),
+      finding("f2", ["c2"], ["e2"], "NEEDS_REVIEW"),
+    ],
+  });
+
+  assert.equal(metricValue(metrics, "explainability"), "45%");
+  assert.match(
+    metricDetail(metrics, "explainability"),
+    /1\/2 findings verified/,
+  );
+  assert.match(
+    metricDetail(metrics, "explainability"),
+    /1\/3 clauses supported/,
+  );
+});
+
+test("buildMetrics reports zero explainability without evidence-backed findings", () => {
+  const metrics = buildMetrics({
+    clauses,
+    evidence: [],
+    findings: [finding("f1", ["c1"], [], "NEEDS_REVIEW")],
+  });
+
+  assert.equal(metricValue(metrics, "explainability"), "0%");
+  assert.match(metricDetail(metrics, "explainability"), /0\/1 findings verified/);
+});
+
 test("toDemoFindings carries evidence validation status into visible findings", () => {
   const extraction = buildDeterministicExtraction(clauses, {
     relationship: "received",
@@ -111,4 +174,53 @@ function clause(
     explicitReferenceIds: [],
     sourceSpanIds: [`span-${id}`],
   };
+}
+
+function evidence(
+  id: string,
+  clauseId: string,
+  validationStatus: Evidence["validationStatus"],
+): Evidence {
+  return {
+    id,
+    clauseId,
+    text: "source text",
+    normalizedText: "source text",
+    sourceSpanIds: [`span-${clauseId}`],
+    validationStatus,
+  };
+}
+
+function finding(
+  id: string,
+  clauseIds: string[],
+  evidenceIds: string[],
+  validationStatus: AiExtractionOutput["findings"][number]["validationStatus"],
+): AiExtractionOutput["findings"][number] {
+  return {
+    id,
+    category: "COMMERCIAL_RISK",
+    type: "test",
+    severity: "MEDIUM",
+    title: "Test finding",
+    summary: "Test summary",
+    clauseIds,
+    evidenceIds,
+    confidence: 0.8,
+    validationStatus,
+  };
+}
+
+function metricValue(
+  metrics: ReturnType<typeof buildMetrics>,
+  id: string,
+) {
+  return metrics.find((metric) => metric.id === id)?.value;
+}
+
+function metricDetail(
+  metrics: ReturnType<typeof buildMetrics>,
+  id: string,
+) {
+  return metrics.find((metric) => metric.id === id)?.detail ?? "";
 }

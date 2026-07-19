@@ -63,6 +63,7 @@ test("POST /api/analyze returns evidence-gated deterministic output without Open
     const body = await response.json();
 
     assert.equal(response.status, 200);
+    assert.equal(body.contractMetadata.contractType, "Services agreement");
     assert.equal(
       body.findings.every((finding: { validationStatus: string }) =>
         ["VERIFIED", "NEEDS_REVIEW"].includes(finding.validationStatus),

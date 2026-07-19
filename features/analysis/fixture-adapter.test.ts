@@ -3,6 +3,7 @@ import test from "node:test";
 
 import type {
   AiExtractionOutput,
+  AnalyzeResponse,
   ContractClause,
   ParsedDocument,
 } from "../../schemas/contract.ts";
@@ -88,4 +89,38 @@ test("buildLiveAnalysisFixture downgrades unsupported API evidence client-side",
   assert.equal(fixture.inspectors[0]?.evidence[0]?.validationStatus, "NEEDS_REVIEW");
   assert.equal(fixture.topFindings[0]?.summary.includes("recipient"), true);
   assert.equal(fixture.topFindings[0]?.validationStatus, "NEEDS_REVIEW");
+});
+
+test("buildLiveAnalysisFixture uses API contract metadata", () => {
+  const analysisResult: AnalyzeResponse = {
+    contractMetadata: {
+      title: "Beta Platform Subscription Terms",
+      contractType: "Subscription agreement",
+    },
+    parties: [],
+    evidence: [],
+    findings: [],
+    identifiedParties: [],
+    inferenceConfidence: 0,
+    reviewerResolution: "unresolved",
+    requiresClarification: true,
+    candidateReviewingPartyIds: [],
+    counterpartyGlance: [],
+    summaries: [],
+    suggestions: [],
+    validationStatus: "NEEDS_REVIEW",
+  };
+
+  const fixture = buildLiveAnalysisFixture({
+    analysisResult,
+    clauses: [clause],
+    document,
+    reviewerContext: {
+      relationship: "received",
+      status: "unresolved",
+    },
+  });
+
+  assert.equal(fixture.contract.title, "Beta Platform Subscription Terms");
+  assert.equal(fixture.contract.contractType, "Subscription agreement");
 });
